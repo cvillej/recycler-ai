@@ -1,5 +1,5 @@
 Prompt-Registry-Contracts-Plan.md
-Reference: Master-Implementation-Plan.md
+Reference: docs/architecture/system-architecture.md
 
 Purpose
 The Prompt Registry & Contracts layer is the backbone of modular AI programming in Recycle-AI. Every prompt is treated as a “first-class module:” versioned, schema-checked, addressable, and testable. This registry is necessary for:
@@ -110,6 +110,6 @@ Prompt string change leads to uncontrolled behavior change.
 Outputs are only asserted against “did it kind of work?”.
 Prompts depend on state not covered in inputSchema.
 6. Links/References
-Master-Implementation-Plan.md
+docs/architecture/system-architecture.md
 Agent-State-Implementation-Plan.md
 Prompt-Router-Plan.md

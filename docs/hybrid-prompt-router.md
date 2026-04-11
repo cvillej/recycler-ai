@@ -1,5 +1,5 @@
 Prompt-Router-Plan.md
-Reference: Master-Implementation-Plan.md
+Reference: docs/architecture/system-architecture.md
 
 Purpose
 The Hybrid Prompt Router is the brain of agent control flow. It chooses the next prompt to run by evaluating:
@@ -123,7 +123,7 @@ Example:
 Good: Deterministic, logged, every decision documented; LLM only resolves ambiguity.
 Bad: Unlogged prompt selections or loose “whatever the LLM says” routers; LLM can choose error skips.
 7. References/Links
-Master-Implementation-Plan.md
+docs/architecture/system-architecture.md
 Agent-State-Implementation-Plan.md
 Prompt-Registry-Contracts-Plan.md
 

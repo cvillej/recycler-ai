@@ -1,5 +1,5 @@
 Observability-Tracing-Plan.md
-Reference: Master-Implementation-Plan.md
+Reference: docs/architecture/system-architecture.md
 
 Purpose
 Unified observability is mission critical for a safe, maintainable, and explainable agent system.
@@ -100,7 +100,7 @@ Decisions made in “black box” code, logs missing branch/reason/context
 No trace-correlation between frontend, backend, and agent
 Prompts or tool calls directly leak PII or credential data to logs in prod
 10. Links/References
-Master-Implementation-Plan.md
+docs/architecture/system-architecture.md
 tracing-approach.md
 LangGraph-Orchestration-Plan.md
 Chat-Transport-API-Plan.md

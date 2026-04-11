@@ -244,6 +244,20 @@ recycle-ai/
 7. ⬜ Set up LangSmith Docker
 8. ⬜ Create development Taskfile
 
+
+## Data Flow Diagram
+
+```mermaid
+flowchart TD
+    UserInput -->|"User submits a request"| ChatTransport
+    ChatTransport -->|"Transforms input for processing"| HybridRouter
+    HybridRouter -->|"Determines next action"| LangGraphNodes
+    LangGraphNodes -->|"Executes tasks and updates state"| StateUpdate
+    StateUpdate -->|"Sends updated state"| Observability
+    Observability -->|"Logs and traces actions"| UIProjection
+    UIProjection -->|"Updates user interface"| UserInput
+```
+
 ## References
 - [Tech Stack Approach](../initial-setup/tech-stack-and-approach.md)
 - [Tracing Approach](../initial-setup/tracing-approach.md)
