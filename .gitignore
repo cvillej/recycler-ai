@@ -1,0 +1,11 @@
+# Node modules
+node_modules/
+
+# Local environment files
+.local.env
+.remote.env
+local.env
+remote.env
+
+# Python virtual environment
+venv/

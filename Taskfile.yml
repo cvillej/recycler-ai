@@ -1,0 +1,23 @@
+version: '3'
+
+tasks:
+  lint:
+    cmds:
+      - eslint .
+
+  typecheck:
+    cmds:
+      - tsc --noEmit
+
+  test:
+    cmds:
+      - jest
+      - vitest
+
+  build:
+    cmds:
+      - next build
+
+  dev:
+    cmds:
+      - next dev
