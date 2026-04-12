@@ -24,7 +24,7 @@ export function createOrchestrator(config: GraphConfig) {
   const graph = buildExecutionGraph(config);
 
   // Use MemorySaver for now; can be swapped for PostgresSaver, etc.
-  const checkpointer = config.checkpointer || new MemorySaver();
+  const checkpointer = config.checkpointer || createCheckpointSaver();
 
   return graph.compile({
     checkpointer,

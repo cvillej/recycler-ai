@@ -6,9 +6,9 @@ This is a new project focused on AI-powered recycling solutions. More details wi
 
 ## Getting Started
 
-**Documentation**: Open the Obsidian vault at `new-docs/` for complete architecture, implementation plans, and guidance optimized for both humans and LLM coding agents.
+**Documentation**: Open the Obsidian vault at `obsidian-docs/` for complete architecture, implementation plans, and guidance optimized for both humans and LLM coding agents.
 
-Start with `[new-docs/00 - Maps of Content/Recycler AI Overview.md](new-docs/00 - Maps of Content/Recycler AI Overview.md)`.
+Start with `[obsidian-docs/00 - Maps of Content/Recycler AI Overview.md](obsidian-docs/00 - Maps of Content/Recycler AI Overview.md)`.
 
 The project is currently a skeleton with an OpenRouter proxy. See the vault for the full target TypeScript architecture.
 

@@ -12,8 +12,8 @@ Always start documentation lookups from:
 - [`new-docs/00 - Maps of Content/Recycler AI Overview.md`](../../new-docs/00%20-%20Maps%20of%20Content/Recycler%20AI%20Overview.md)
 
 Key related docs:
-- [`new-docs/04 - Permanent/Router/Overview.md`](../../new-docs/04%20-%20Permanent/Router/Overview.md)
-- [`new-docs/04 - Permanent/Extensibility/Hybrid Router Extensions.md`](../../new-docs/04%20-%20Permanent/Extensibility/Hybrid%20Router%20Extensions.md)
+- [`obsidian-docs/Hybrid-Prompt-Router.md`](../../new-docs/04%20-%20Permanent/Router/Overview.md)
+- [`obsidian-docs/Hybrid-Prompt-Router.md`](../../new-docs/04%20-%20Permanent/Extensibility/Hybrid%20Router%20Extensions.md)
 - [`new-docs/04 - Permanent/Architecture/Prompt System.md`](../../new-docs/04%20-%20Permanent/Architecture/Prompt%20System.md)
 
 ## Architecture
@@ -105,7 +105,7 @@ graph.addNode('classify_intent', async (state) => {
 
 ## Extensibility
 
-Follow the patterns in [`new-docs/04 - Permanent/Extensibility/Hybrid Router Extensions.md`](../../new-docs/04%20-%20Permanent/Extensibility/Hybrid%20Router%20Extensions.md):
+Follow the patterns in [`obsidian-docs/Hybrid-Prompt-Router.md`](../../new-docs/04%20-%20Permanent/Extensibility/Hybrid%20Router%20Extensions.md):
 
 - **Hard Rules**: `router.registerHardRule(rule)`
 - **State Rules**: `router.registerStateRule(rule)`

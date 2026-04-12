@@ -11,3 +11,5 @@ remote.env
 venv/
 
 .pnpm-store/
+**/.obsidian
+.next

@@ -62,7 +62,7 @@ const result = await invokeGraph(
 
 ## Docs Graph
 
-Start here: [`new-docs/00 - Maps of Content/Recycler AI Overview.md`](/Users/jfortney/dev/recycle-ai/new-docs/00%20-%20Maps%20of%20Content/Recycler%20AI%20Overview.md)
+Start here: [`obsidian-docs/Home.md`](/Users/jfortney/dev/recycle-ai/new-docs/00%20-%20Maps%20of%20Content/Recycler%20AI%20Overview.md)
 
 Follow links:
 - [`new-docs/04 - Permanent/Architecture/Execution Engine.md`]

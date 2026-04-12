@@ -2,7 +2,8 @@ import { StateGraph } from '@langchain/langgraph';
 import { messagesReducer, contextReducer, routerStateReducer, metadataReducer } from '../state/schema';
 import { HybridRouter } from '../router/hybrid';
 import { getPromptExecutor } from '../prompts/registry';
-import type { AgentState } from '../state/schema';
+import type { AgentState, Message, RouterState, LastError } from '../state/schema';
+import { END } from '@langchain/langgraph';
 import type { GraphConfig } from './types';
 import { createRouterNode, createPromptNode } from './nodes';
 
@@ -24,14 +25,17 @@ export function buildExecutionGraph(config: GraphConfig) {
     llmModel: config.llmModel,
   });
 
-  const graph = new StateGraph<AgentState>({
-    channels: {
-      messages: messagesReducer,
-      context: contextReducer,
-      routerState: routerStateReducer,
-      metadata: metadataReducer,
-    },
-  });
+  type GraphState = AgentState;
+
+const graph = new StateGraph<GraphState>({
+  channels: {
+    messages: messagesReducer,
+    context: contextReducer,
+    routerState: routerStateReducer,
+    metadata: metadataReducer,
+    lastError: lastErrorReducer,
+  },
+});
 
   // Add router node
   graph.addNode('router', createRouterNode(router));
@@ -46,7 +50,7 @@ export function buildExecutionGraph(config: GraphConfig) {
   graph.addEdge('__start__', 'router');
 
   // Conditional edges from router to the selected prompt
-  graph.addConditionalEdges('router', (state) => state.nextPrompt || 'respond', {
+  graph.addConditionalEdges('router', (state: GraphState) => state.routerState.lastDecision?.ruleId || 'respond', {
     classify_intent: 'classify_intent',
     plan_query: 'plan_query',
     execute_tool_reasoning: 'execute_tool_reasoning',
@@ -64,8 +68,8 @@ export function buildExecutionGraph(config: GraphConfig) {
   }
 
   // Terminal prompts end the graph
-  graph.addEdge('respond', '__end__');
-  graph.addEdge('handle_error', '__end__');
+  graph.addEdge('respond', END);
+  graph.addEdge('handle_error', END);
 
   // Interrupt before await_user for human-in-the-loop
   if (config.enableInterrupts) {

@@ -1,106 +1,40 @@
-Observability-Tracing-Plan.md
-Reference: docs/architecture/system-architecture.md
+---
 
-Purpose
-Unified observability is mission critical for a safe, maintainable, and explainable agent system.
-This section ensures every important event, branch, output, and error is recordable, traceable, and can be reviewed across:
+title: Observability & Tracing Documentation
+tags: [obsidian, recycle-ai, observability-tracing]
+published: true
+---
 
-System-wide traces (OpenTelemetry/OTel)
-Rich agent path/debugging (LangSmith)
-Structure logs for automation, alerting, and postmortems
-Scope
-Observability is embedded across ALL layers—agent state, prompts, router, orchestration, tools, transport, and UI.
-OTel instrumentation and LangSmith event streams must correlate via ids (trace, span, agent run, etc.).
-No critical action is hidden from logs by design; all infrastructure respects privacy/redaction rules.
-Explicit Implementation Requirements
-1. Instrumentation Setup
-🟦 AGENT:
+# Observability & Tracing Overview
 
-OTel must be initialized for your app (e.g., instrumentation.ts in Next.js; registerOTel({ serviceName })).
-LangSmith instrumentation enabled in agent graph, with environment-based config for dev/prod.
-Every function of interest (router decision, prompt execution, tool invocation, state change, interrupt, API req/res) emits a trace span/event at the appropriate level.
-🟨 HUMAN:
+Unified observability is essential for maintaining a safe, manageable, and explainable agent system. This documentation ensures that every significant event, decision point, output, and error is both recordable and traceable across the architecture.
 
-Ensure OTel exports/trace drains are configured for each project env (dev, preview, prod).
-Sampling and privacy rules must be followed as in tracing-approach.md.
-2. Trace & Log Structure
-🟦 AGENT:
+## Purpose
+All interactions and system behavior should be logged and monitored for accountability and insight, allowing for easy debugging and auditing.
 
-Each log/trace/span must always include:
-trace_id, span_id, and/or LangSmith run_id
-Request/session/user/thread context (redacted as needed)
-Event type (router.decision, prompt.exec, tool.result, etc)
-Decision/reason field: always log why a branch or action was taken
-Use consistent log levels: INFO (normal step), WARN (degraded fallback), ERROR (unexpected/failure), DEBUG (dev/sampled only).
-🟨 HUMAN:
+## Explicit Implementation Requirements
+### 1. Instrumentation Setup
+- OpenTelemetry (OTel) must be initialized:
+    - Example snippet: `registerOTel({ serviceName: 'your-service-name' })`.
+- Ensure that LangSmith instrumentation is enabled for the agent graph with proper environment configuration.
+- Every function of interest (e.g., routing decisions, prompt executions) MUST emit trace spans/events.
 
-All logs must be machine consumable (JSON/structured), not just console lines.
-Never log full sensitive payloads in prod (see below).
-3. Correlation & Ownership
-🟦 AGENT:
+### 2. Trace Structure
+- Each log, trace, or span must contain:
+    - `trace_id`, `span_id`, and/or LangSmith's `run_id`.
+    - Context for the request/session/user/thread (do necessary redactions).
+    - The event type (e.g., `router.decision`, `prompt.exec`, etc.) and a decision/reason field for diagnostic clarity.
 
-All agent-run logs correleate by trace id, and prompt-to-tool-to-UI cycle always follows same ID chain.
-Each workflow (e.g. a chat turn, a tool sequence) is uniquely traceable and explorable after the fact.
-🟨 HUMAN:
+### 3. Correlation & Visibility
+- Ensure all logs can be traced back to the source with consistent IDs across the agent, tools, and UI.
+- Each workflow (e.g., a chat turn) must be traceable, enabling exploration after the fact for debugging purposes.
 
-Privacy and compliance require all logs to redact or hash user PII, secret keys, auth data.
-4. Redaction & Sampling Policy
-🟦 AGENT:
+### 4. Redaction & Privacy Policies
+- Sensitive contexts must be redacted or hashed to protect user data.
+- Ensure that logging policies comply with privacy regulations, especially in production environments.
 
-Redact or hash all secrets, sensitive context, prompt text and tool payloads unless in DEV or sampled/troubleshooting mode.
-Sampling config:
-100% of errors
-10-20% of healthy prod
-100% of new deployments/canaries
-5. Trace/Log Enrichment and Tags
-🟦 AGENT:
+## Related Topics
+- For insights into how tracing integrates with workflow logic, see [[LangGraph Orchestration]].
+- For understanding how events are handled in the routing process, check [[Hybrid Prompt Router]].
 
-Add high-context tags to each span/log:
-Workflow step (chat.turn, router.decision, prompt.classify_intent, etc)
-State summary (intent, pivot, tool, widget type, etc)
-Branch reason/ID
-Add OTel/GenAI conventions (app.*, http status, tool_name, pivot_detected, checkpoint_version, etc)
-6. LangSmith-Specific Instrumentation
-🟦 AGENT:
-
-Every prompt, tool run, router decision, and graph transition is logged to LangSmith with:
-node start/end
-input/output summary (never full private user data in prod)
-state diff summary
-branch/fallback decision
-Use LangSmith’s environment variable setup so traces do not “break” on short serverless runs.
-🟨 HUMAN:
-
-Ensure that trace runs in LangSmith are tagged to deployment hash/branch, environment, etc for A/B regtest.
-7. UI & Playground Feedback
-🟦 AGENT:
-
-Pipe trace/debug data and error/wait states (as contract fields) to the UI and admin Playgrounds for full lifecycle visibility.
-Do not expose low-level system trace ids to users, but provide explicit feedback (“agent waiting for approval”, “rerunning with fallback plan X”, etc).
-8. Test Vectors & Monitoring
-🟦 AGENT:
-
-Unit/integration tests must check that trace/context/log fields are present and correct for:
-Normal agent steps
-Error cases
-Interruptions/approval cycles
-🟨 HUMAN:
-
-Review monitoring dashboards/trace trees regularly, esp. after prompt/graph/infra updates.
-9. Good / Bad Practice Callouts
-Good:
-
-Every agent branch/step is explainable after the fact via traces/logs
-Redaction and privacy enforced per environment
-Ingest/export to OTel/ELK/Sentry/SIEM works out of the box for all layers
-Trace/decision logs sampled into LangSmith for agent evolution and prompt A/B evaluation
-Bad:
-
-Decisions made in “black box” code, logs missing branch/reason/context
-No trace-correlation between frontend, backend, and agent
-Prompts or tool calls directly leak PII or credential data to logs in prod
-10. Links/References
-docs/architecture/system-architecture.md
-tracing-approach.md
-LangGraph-Orchestration-Plan.md
-Chat-Transport-API-Plan.md
+---

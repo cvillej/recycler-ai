@@ -8,9 +8,9 @@ Always start documentation lookups from:
 - [`new-docs/00 - Maps of Content/Recycler AI Overview.md`](../../new-docs/00%20-%20Maps%20of%20Content/Recycler%20AI%20Overview.md)
 
 Key related docs:
-- [`new-docs/04 - Permanent/Architecture/Prompt System.md`](../../new-docs/04%20-%20Permanent/Architecture/Prompt%20System.md)
-- [`new-docs/04 - Permanent/Router/Overview.md`](../../new-docs/04%20-%20Permanent/Router/Overview.md)
-- [`new-docs/04 - Permanent/Architecture/Execution Engine.md`](../../new-docs/04%20-%20Permanent/Architecture/Execution%20Engine.md)
+- [`obsidian-docs/Prompt-System.md`](../../new-docs/04%20-%20Permanent/Architecture/Prompt%20System.md)
+- [`obsidian-docs/Hybrid-Prompt-Router.md`](../../new-docs/04%20-%20Permanent/Router/Overview.md)
+- [`obsidian-docs/LangGraph-Orchestration.md`](../../new-docs/04%20-%20Permanent/Architecture/Execution%20Engine.md)
 - [`new-docs/04 - Permanent/Extensibility/Hybrid Router Extensions.md`](../../new-docs/04%20-%20Permanent/Extensibility/Hybrid%20Router%20Extensions.md)
 
 ## Architecture

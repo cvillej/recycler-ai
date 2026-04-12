@@ -43,10 +43,10 @@ const state = parseWithMigration(rawJSON);
 ## Architecture Links
 
 Start at the documentation entry point:
-- `new-docs/00 - Maps of Content/Recycler AI Overview.md`
+- `obsidian-docs/Home.md`
 
 Related docs:
-- `new-docs/04 - Permanent/Architecture/State Management.md`
+- `obsidian-docs/Agent-State.md`
 - `new-docs/04 - Permanent/Extensibility/State Schema Evolution.md`
 - `new-docs/04 - Permanent/Architecture/Prompt System.md` (consumes `AgentState` via contracts)
 - `new-docs/04 - Permanent/Router/Overview.md` (Hybrid Router consumes this schema)
