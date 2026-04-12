@@ -16,7 +16,7 @@ Explains modular prompting and hybrid routing in the system.
 - Combines hard rules, state-based routing, and LLM fallback.  
 
 **Links to Related Concepts**
-- `[[State Management|How state drives prompt selection and routing]]`
-- `[[Hybrid Router Extensions|Hybrid routing implementation details]]` 
+- [[State Management|How state drives prompt selection and routing]]`
+- [[Hybrid Router Extensions|Hybrid routing implementation details]]` 
 
 **Backlinks**

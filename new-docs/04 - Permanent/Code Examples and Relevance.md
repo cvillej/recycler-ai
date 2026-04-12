@@ -33,8 +33,8 @@ These examples are drawn from `[docs/architecture/system-architecture.md](docs/a
 - Extensibility: `[docs/extensibility.md](docs/extensibility.md)`
 
 **Links to Related Concepts**
-- `[[State Management|AgentState type example]]`
-- `[[Hybrid Router Extensions|RouteDecision and HybridRouter class]]`
-- `[[State Schema Evolution|Migration function example]]` 
+- [[State Management|AgentState type example]]`
+- [[Hybrid Router Extensions|RouteDecision and HybridRouter class]]`
+- [[State Schema Evolution|Migration function example]]` 
 
 **Backlinks**

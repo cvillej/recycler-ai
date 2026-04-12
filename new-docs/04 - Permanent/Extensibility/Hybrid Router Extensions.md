@@ -17,7 +17,7 @@ Extending the hybrid routing system with new rules and methodologies.
 - Use methods like `checkCustomRules` for clean extensions.
 
 **Links to Related Concepts**
-- `[[Prompt System|Integration between router and prompt selection]]`
-- `[[State Schema Evolution|Impact of state changes on routing rules]]` 
+- [[Prompt System|Integration between router and prompt selection]]`
+- [[State Schema Evolution|Impact of state changes on routing rules]]` 
 
 **Backlinks**

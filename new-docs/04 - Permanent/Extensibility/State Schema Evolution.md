@@ -17,7 +17,7 @@ Guidance on evolving the state schema and ensuring checkpoint compatibility.
 - Use migration functions to transition schemas.
 
 **Links to Related Concepts**
-- `[[State Management|The core state schema being evolved]]`
-- `[[Execution Engine|How checkpoints are stored and migrated in LangGraph]]` 
+- [[State Management|The core state schema being evolved]]`
+- [[Execution Engine|How checkpoints are stored and migrated in LangGraph]]` 
 
 **Backlinks**

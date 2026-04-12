@@ -3,7 +3,7 @@ template: Recycler Note Template
 type:
 aliases:
 tags: [recycle-ai, overview]
-created: {{date:YYYY-MM-DD}}
+created: 2026-04-11date:YYYY-MM-DD}}
 updated: {{date:YYYY-MM-DD}}
 status: stable
 ---
@@ -46,12 +46,12 @@ mindmap
 ```
 
 ## Links to Key Sections
-- `[[Architecture Introduction|Comprehensive overview of all architecture layers and their relationships]]`
-- `[[State Management|Core foundation defining AgentState with Zod schemas]]`
-- `[[Prompt System|Modular prompting with hybrid routing logic]]`
-- `[[Execution Engine|LangGraph-based workflow execution and state transitions]]`
-- `[[Hybrid Router Extensions|Custom rules, A/B testing, and router extensibility patterns]]`
-- `[[State Schema Evolution|Versioning, migration functions, and checkpoint compatibility]]`
+- [[Architecture Overview|Comprehensive overview of all architecture layers and their relationships]]`
+- [[State Management|Core foundation defining AgentState with Zod schemas]]`
+- [[Prompt System|Modular prompting with hybrid routing logic]]`
+- [[Execution Engine|LangGraph-based workflow execution and state transitions]]`
+- [[Hybrid Router Extensions|Custom rules, A/B testing, and router extensibility patterns]]`
+- [[State Schema Evolution|Versioning, migration functions, and checkpoint compatibility]]`
 
 ## Usage Guide for Agents
 Follow the links to access different sections. Always start here to navigate the entire documentation effectively.

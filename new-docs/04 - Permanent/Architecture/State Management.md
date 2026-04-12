@@ -17,7 +17,7 @@ Defines and manages explicit agent state using Zod schemas and TypeScript types.
 - Utilizes Zod schemas for type enforcement.  
 
 **Links to Related Concepts**
-- `[[Prompt System|How the Prompt System consumes and updates AgentState]]`
-- `[[State Schema Evolution|How state schema changes are handled with migrations]]`  
+- [[Prompt System|How the Prompt System consumes and updates AgentState]]`
+- [[State Schema Evolution|How state schema changes are handled with migrations]]`  
 
 **Backlinks**

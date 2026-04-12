@@ -19,7 +19,7 @@
 **Current Implementation**: Placeholder React app and OpenRouter proxy only. See `apps/web/index.tsx` and `openrouter-proxy.js`.
 
 ## Links to Related Concepts
-- `[[State Management|Foundation with explicit AgentState schema]]`
-- `[[Prompt System|Modular prompting and contracts]]`
-- `[[Execution Engine|LangGraph orchestration]]`
-- `[[Hybrid Router Extensions|Routing logic and extensions]]`
+- [[State Management|Foundation with explicit AgentState schema]]`
+- [[Prompt System|Modular prompting and contracts]]`
+- [[Execution Engine|LangGraph orchestration]]`
+- [[Hybrid Router Extensions|Routing logic and extensions]]`

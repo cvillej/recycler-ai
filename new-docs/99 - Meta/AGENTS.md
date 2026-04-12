@@ -17,7 +17,7 @@ Welcome to the Recycler AI Obsidian Vault. This vault is designed to be both hum
    - This file serves as the main entry point and provides an overview of the entire documentation structure.
 
 2. **Follow Links with Purpose**: Only follow links that clearly describe what they contain and why they matter.
-   - Example: `[[Hybrid Router Extensions|Hybrid Router - Setup and Logic]]`
+   - Example: [[Hybrid Router Extensions|Hybrid Router - Setup and Logic]]`
 
 3. **Template Requirement**: Use the "Recycler Note Template" for any new note creation.
    - All notes should follow this structure for consistency.

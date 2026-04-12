@@ -1,4 +1,4 @@
-# Overview of Hybrid Prompt Router
+# Hybrid Router Overview of Hybrid Prompt Router
 
 The Hybrid Prompt Router is a core component of the Recycler AI architecture, enabling decision-making through multiple routing phases.
 

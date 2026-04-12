@@ -25,5 +25,5 @@ See code examples in linked notes below.
 **Source of Truth**: `[docs/extensibility.md](docs/extensibility.md)`
 
 **Links to Related Concepts**
-- `[[State Schema Evolution|Versioning and migration patterns]]`
-- `[[Hybrid Router Extensions|A/B testing and custom rules]]`
+- [[State Schema Evolution|Versioning and migration patterns]]`
+- [[Hybrid Router Extensions|A/B testing and custom rules]]`

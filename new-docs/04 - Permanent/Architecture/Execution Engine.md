@@ -16,7 +16,7 @@ Details the execution of prompt-driven workflows with LangGraph JS.
 - Utilizes LangGraph JS for graph-based state machine execution.  
 
 **Links to Related Concepts**
-- `[[Prompt System|Prompts executed by the LangGraph nodes]]`
-- `[[State Management|State transitions managed by the execution engine]]` 
+- [[Prompt System|Prompts executed by the LangGraph nodes]]`
+- [[State Management|State transitions managed by the execution engine]]` 
 
 **Backlinks**
