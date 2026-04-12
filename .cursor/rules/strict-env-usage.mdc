@@ -1,0 +1,23 @@
+---
+description: STRICT .env usage - NEVER use .env.example
+alwaysApply: true
+lang: mdc
+---
+
+# Strict .env Policy
+
+**MANDATORY**: 
+- ALWAYS use `process.env.VAR` from **.env** for ALL config/secrets (DB, LLM, API keys).
+- **NEVER** reference, load, or fallback to `.env.example`.
+- `.env.example` is **template only** – ignore in code.
+
+## Enforcement
+- No imports like dotenv.config({ path: '.env.example' }).
+- No hardcoded fallbacks referencing .env.example.
+- Update all code to process.env only.
+
+## Migration
+- Copy .env.example → .env, fill real values.
+- rm .env.example after.
+
+Violation: Stop and fix.

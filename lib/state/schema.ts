@@ -86,7 +86,7 @@ export const AgentStateSchema = z.object({
    * Contextual data that persists across turns but is not part of the message history.
    * Examples: user preferences, extracted entities, conversation summary.
    */
-  context: z.record(z.unknown()).default({}),
+  context: z.record(z.unknown()).default({ toolResults: z.record(z.unknown()).default({}) } as any),
 
   /**
    * Hybrid Router internal state.
@@ -175,7 +175,7 @@ export function safeParseAgentState(input: unknown): { success: boolean; data?: 
  * This is a placeholder showing the pattern; actual v2 schema would be defined separately.
  *
  * For detailed schema evolution patterns, see:
- * - `obsidian-docs/Agent-State.md`
+ * - `docs/Agent-State.md`
  *
  * This migration pattern ensures backward compatibility when loading LangGraph checkpoints
  * from previous versions of the system.
@@ -205,7 +205,7 @@ export function migrateV1ToV2(v1State: AgentState): unknown {
  * @returns Validated AgentState (latest version)
  * @throws {z.ZodError} if migration fails or final validation fails
  *
- * @see `obsidian-docs/Agent-State.md`
+ * @see `docs/Agent-State.md`
  */
 export function parseWithMigration(raw: unknown): AgentState {
   // First, parse into a minimal shape to detect version
@@ -261,7 +261,7 @@ export function createCheckpoint(state: AgentState): unknown {
  * @param checkpoint - JSON from LangGraph storage
  * @returns Validated AgentState
  *
- * @see `obsidian-docs/Agent-State.md`
+ * @see `docs/Agent-State.md`
  */
 export function loadCheckpoint(checkpoint: unknown): AgentState {
   return parseWithMigration(checkpoint);

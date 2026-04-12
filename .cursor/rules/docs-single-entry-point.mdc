@@ -6,11 +6,11 @@ alwaysApply: true
 # Documentation Graph Navigation
 
 ## Single Source of Truth
-ALL project documentation lives in the `obsidian-docs/` Obsidian vault as a **linked knowledge graph**.
+ALL project documentation lives in the `docs/` Obsidian vault as a **linked knowledge graph**.
 
 ## Mandatory Entry Point
 **ALWAYS start here and ONLY here:**
-- `obsidian-docs/Home.md`
+- `docs/Home.md`
 
 ## Navigation Rules
 - Treat docs as a **graph**: Follow `[[wikilinks]]` and Markdown links from the entry point.
@@ -20,7 +20,7 @@ ALL project documentation lives in the `obsidian-docs/` Obsidian vault as a **li
 
 ## Structure Overview
 ```
-obsidian-docs/
+docs/
 ├── 00 - Maps of Content/Recycler AI Overview.md  ← START HERE
 ├── 01 - Projects/
 ├── 02 - Areas/
