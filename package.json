@@ -8,9 +8,12 @@
     "test": "jest"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.39",
+    "@langchain/langgraph": "^1.2.8",
     "next": "^15.3.5",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.2",

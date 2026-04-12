@@ -9,3 +9,5 @@ remote.env
 
 # Python virtual environment
 venv/
+
+.pnpm-store/

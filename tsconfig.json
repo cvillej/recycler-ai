@@ -9,7 +9,13 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
-    "types": ["jest", "@testing-library/jest-dom"]
+    "types": ["jest", "@testing-library/jest-dom"],
+    "baseUrl": ".",
+    "paths": {
+      "@state/*": ["lib/state/*"],
+      "@router/*": ["lib/router/*"],
+      "@prompts/*": ["lib/prompts/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "venv"]
