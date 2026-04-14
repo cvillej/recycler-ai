@@ -1,23 +1,126 @@
 version: '3'
 
+vars:
+  APP: 'prompt-management.server:app'
+  HOST: '0.0.0.0'
+  PORT: '8000'
+  LOG_DIR: 'prompt-management/logs'
+  PID_FILE: '.task/uvicorn.pid'
+  LOG_FILE: '{{.LOG_DIR}}/server.log'
+
+dotenv:
+  - 'env.common'
+  - 'env.{{.RECYCLE_AI_ENV | default "local"}}'
+
 tasks:
-  lint:
+  default:
+    desc: Show available tasks
     cmds:
-      - eslint .
-
-  typecheck:
-    cmds:
-      - tsc --noEmit
-
-  test:
-    cmds:
-      - jest
-      - vitest
-
-  build:
-    cmds:
-      - next build
+      - task --list-all
 
   dev:
+    desc: Run Next.js dev server
     cmds:
-      - next dev
+      - npm run dev
+
+  build:
+    desc: Build for production
+    cmds:
+      - npm run build
+
+  start:
+    desc: Run production server
+    cmds:
+      - npm start
+
+  lint:
+    desc: Lint codebase
+    cmds:
+      - npm run lint
+
+  typecheck:
+    desc: TypeScript check
+    cmds:
+      - npm run typecheck
+
+  test:
+    desc: Run tests
+    cmds:
+      - npm run test
+
+  test:watch:
+    desc: Run tests in watch mode
+    cmds:
+      - npm run test -- --watch
+
+  venv-init:
+    desc: Create/activate .venv with uv
+    cmds:
+      - uv venv .venv
+
+  pip-install:
+    desc: Install Python deps
+    cmds:
+      - uv pip install -r prompt-management/requirements.txt
+
+  generate-docs-cache:
+    desc: Generate Grok 4.20 docs cache
+    cmds:
+      - uv run python -c "from prompt-management.grok_4_20_doc_concat import main; main()"
+
+  clean:
+    desc: Clean build artifacts + venv
+    cmds:
+      - rm -rf .next .turbo node_modules/.cache .venv .task {{.LOG_DIR}} .task {{.LOG_DIR}}
+
+  deploy:
+    desc: Deploy to Vercel (use vercel CLI)
+    cmds:
+      - npm run build
+      - vercel --prod
+
+  prompt-injection-server:start:
+    desc: Start FastAPI/Uvicorn in the background
+    cmds:
+      - mkdir -p .task {{.LOG_DIR}}
+      - |
+        uv run uvicorn {{.APP}} --host {{.HOST}} --port {{.PORT}} --log-file {{.LOG_FILE}} & echo $! > {{.PID_FILE}}
+
+  prompt-injection-server:stop:
+    desc: Stop FastAPI/Uvicorn
+    cmds:
+      - |
+        if [ ! -f {{.PID_FILE}} ]; then
+          echo "Server not running (no PID file)."
+          exit 0
+        fi
+        PID="$(cat {{.PID_FILE}})"
+        if kill -0 "$PID" 2>/dev/null; then
+          kill -TERM "$PID"
+          echo "Stopped PID $PID"
+        else
+          echo "Server not running (stale PID file)."
+        fi
+        rm -f {{.PID_FILE}}
+
+  prompt-injection-server:restart:
+    desc: Restart FastAPI/Uvicorn
+    cmds:
+      - task: prompt-injection-server:stop
+      - task: prompt-injection-server:start
+
+  prompt-injection-server:status:
+    desc: Show server status
+    cmds:
+      - |
+        if [ -f {{.PID_FILE}} ] && kill -0 "$(cat {{.PID_FILE}})" 2>/dev/null; then
+          echo "running (PID $(cat {{.PID_FILE}}))"
+        else
+          echo "not running"
+          exit 1
+        fi
+
+  prompt-injection-server:logs:
+    desc: Tail logs
+    cmds:
+      - tail -f {{.LOG_FILE}}

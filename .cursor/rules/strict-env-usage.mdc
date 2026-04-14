@@ -4,20 +4,33 @@ alwaysApply: true
 lang: mdc
 ---
 
-# Strict .env Policy
+# Multi-Env Policy (RECYCLE_AI_ENV=local/prod)
 
 **MANDATORY**: 
-- ALWAYS use `process.env.VAR` from **.env** for ALL config/secrets (DB, LLM, API keys).
-- **NEVER** reference, load, or fallback to `.env.example`.
-- `.env.example` is **template only** – ignore in code.
+- ALWAYS use `process.env.VAR` from env files.
+- Load: .env.common (shared) + .env.local/prod (env-specific) via RECYCLE_AI_ENV.
+- **NEVER** use .env.example or hardcode.
+
+**Code Loading**:
+```typescript
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.common' });
+dotenv.config({ path: process.env.RECYCLE_AI_ENV === 'local' ? '.env.local' : '.env.prod' });
+```
+
+## Adding Vars
+- **Shared (same dev/prod)**: .env.common
+- **Differ**: Add to **both** .env.local & .env.prod (same value if identical).
+- Reason: DB_URL (prod differ), LLM_MODEL (shared).
 
 ## Enforcement
-- No imports like dotenv.config({ path: '.env.example' }).
-- No hardcoded fallbacks referencing .env.example.
-- Update all code to process.env only.
+- No .env.example references.
+- Validate RECYCLE_AI_ENV set (zshrc).
+- Update code to multi-load.
 
 ## Migration
-- Copy .env.example → .env, fill real values.
-- rm .env.example after.
+- Populate .env.common (shared vars).
+- .env.local/prod for env-specific.
+- rm .env.example if exists.
 
 Violation: Stop and fix.

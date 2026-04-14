@@ -1,0 +1,189 @@
+[2026-04-12 19:11:48,721] INFO in server: Started server process [96723]
+[2026-04-12 19:11:48,721] INFO in on: Waiting for application startup.
+[2026-04-12 19:11:48,721] INFO in on: Application startup complete.
+[2026-04-12 19:11:48,722] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:11:56,406] INFO in server: Shutting down
+[2026-04-12 19:11:56,508] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:11:56,509] INFO in on: Application shutdown complete.
+[2026-04-12 19:11:56,509] INFO in server: Finished server process [96723]
+[2026-04-12 19:12:36,990] INFO in server: Started server process [96852]
+[2026-04-12 19:12:36,990] INFO in on: Waiting for application startup.
+[2026-04-12 19:12:36,990] INFO in on: Application startup complete.
+[2026-04-12 19:12:36,991] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:12:41,735] INFO in server: Shutting down
+[2026-04-12 19:12:41,837] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:12:41,838] INFO in on: Application shutdown complete.
+[2026-04-12 19:12:41,838] INFO in server: Finished server process [96852]
+[2026-04-12 19:13:29,875] INFO in server: Started server process [96975]
+[2026-04-12 19:13:29,875] INFO in on: Waiting for application startup.
+[2026-04-12 19:13:29,875] INFO in on: Application startup complete.
+[2026-04-12 19:13:29,877] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:14:15,161] INFO in server: Shutting down
+[2026-04-12 19:14:15,261] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:14:15,261] INFO in on: Application shutdown complete.
+[2026-04-12 19:14:15,261] INFO in server: Finished server process [96975]
+[2026-04-12 19:14:15,296] INFO in server: Started server process [97063]
+[2026-04-12 19:14:15,296] INFO in on: Waiting for application startup.
+[2026-04-12 19:14:15,296] INFO in on: Application startup complete.
+[2026-04-12 19:14:15,298] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:15:49,896] INFO in server: Shutting down
+[2026-04-12 19:15:49,997] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:15:49,997] INFO in on: Application shutdown complete.
+[2026-04-12 19:15:49,997] INFO in server: Finished server process [97063]
+[2026-04-12 19:15:50,047] INFO in server: Started server process [97222]
+[2026-04-12 19:15:50,047] INFO in on: Waiting for application startup.
+[2026-04-12 19:15:50,047] INFO in on: Application startup complete.
+[2026-04-12 19:15:50,048] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:16:01,766] INFO in server: Shutting down
+[2026-04-12 19:16:01,868] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:16:01,868] INFO in on: Application shutdown complete.
+[2026-04-12 19:16:01,869] INFO in server: Finished server process [97222]
+[2026-04-12 19:16:11,355] INFO in server: Started server process [97252]
+[2026-04-12 19:16:11,355] INFO in on: Waiting for application startup.
+[2026-04-12 19:16:11,355] INFO in on: Application startup complete.
+[2026-04-12 19:16:11,356] INFO in server: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-04-12 19:16:56,115] INFO in server: Shutting down
+[2026-04-12 19:16:56,217] INFO in on: Waiting for application shutdown.
+[2026-04-12 19:16:56,217] INFO in on: Application shutdown complete.
+[2026-04-12 19:16:56,217] INFO in server: Finished server process [97252]
+[2026-04-12 19:32:49,785] ERROR in config: Error loading ASGI app. Could not import module "prompt-management.server".
+Traceback (most recent call last):
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 604, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 869, in configure_handler
+    result = factory(**kwargs)
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/handlers.py", line 227, in __init__
+    BaseRotatingHandler.__init__(self, filename, 'a', encoding=encoding,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 delay=delay, errors=errors)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/handlers.py", line 64, in __init__
+    logging.FileHandler.__init__(self, filename, mode=mode,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 encoding=encoding, delay=delay,
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 errors=errors)
+                                 ^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/jfortney/dev/recycle-ai/logs/server.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/jfortney/dev/recycle-ai/.venv/bin/uvicorn", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1485, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1406, in main
+    rv = self.invoke(ctx)
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1269, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 824, in invoke
+    return callback(*args, **kwargs)
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 433, in main
+    run(
+    ~~~^
+        app,
+        ^^^^
+    ...<47 lines>...
+        h11_max_incomplete_event_size=h11_max_incomplete_event_size,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 541, in run
+    config = Config(
+        app,
+    ...<46 lines>...
+        h11_max_incomplete_event_size=h11_max_incomplete_event_size,
+    )
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 280, in __init__
+    self.configure_logging()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 384, in configure_logging
+    logging.config.dictConfig(loaded_config)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 935, in dictConfig
+    dictConfigClass(config).configure()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 611, in configure
+    raise ValueError('Unable to configure handler '
+                     '%r' % name) from e
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 604, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 869, in configure_handler
+    result = factory(**kwargs)
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/handlers.py", line 227, in __init__
+    BaseRotatingHandler.__init__(self, filename, 'a', encoding=encoding,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 delay=delay, errors=errors)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/handlers.py", line 64, in __init__
+    logging.FileHandler.__init__(self, filename, mode=mode,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 encoding=encoding, delay=delay,
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                 errors=errors)
+                                 ^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/jfortney/dev/recycle-ai/logs/server.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/jfortney/dev/recycle-ai/.venv/bin/uvicorn", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1485, in __call__
+    return self.main(*args, **kwargs)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1406, in main
+    rv = self.invoke(ctx)
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 1269, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/click/core.py", line 824, in invoke
+    return callback(*args, **kwargs)
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 433, in main
+    run(
+    ~~~^
+        app,
+        ^^^^
+    ...<47 lines>...
+        h11_max_incomplete_event_size=h11_max_incomplete_event_size,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/main.py", line 541, in run
+    config = Config(
+        app,
+    ...<46 lines>...
+        h11_max_incomplete_event_size=h11_max_incomplete_event_size,
+    )
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 280, in __init__
+    self.configure_logging()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/jfortney/dev/recycle-ai/.venv/lib/python3.13/site-packages/uvicorn/config.py", line 384, in configure_logging
+    logging.config.dictConfig(loaded_config)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 935, in dictConfig
+    dictConfigClass(config).configure()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/jfortney/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/logging/config.py", line 611, in configure
+    raise ValueError('Unable to configure handler '
+                     '%r' % name) from e
+ValueError: Unable to configure handler 'file'

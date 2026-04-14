@@ -14,3 +14,6 @@ venv/
 .pnpm-store/
 **/.obsidian
 .next
+
+.env**
+
