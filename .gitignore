@@ -16,4 +16,5 @@ venv/
 .next
 
 .env**
-
+backup/**
+notes/**

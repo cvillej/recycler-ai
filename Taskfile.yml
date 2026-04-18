@@ -124,3 +124,103 @@ tasks:
     desc: Tail logs
     cmds:
       - tail -f {{.LOG_FILE}}
+
+  # ---------------------------------------------------------------------------
+  # Schema (logging-impl/schema.sql)
+  # ---------------------------------------------------------------------------
+  schema:apply:
+    desc: Apply logging schema (conversation_threads, llm_calls)
+    cmds:
+      - psql -h localhost -p 5432 -U postgres -d ai -f logging-impl/schema.sql
+
+  # ---------------------------------------------------------------------------
+  # Langfuse v3 Self-Hosted (logging-impl/docker-compose.langfuse.yml)
+  # ---------------------------------------------------------------------------
+  langfuse:start:
+    desc: Start Langfuse (ClickHouse+Redis+MinIO+Postgres langfuse DB, UI:3000)
+    cmds:
+      - mkdir -p traces/langfuse-minio
+      - docker compose -f logging-impl/docker-compose.langfuse.yml up -d
+      - |
+        for i in {1..30}; do
+          if curl -f -m 3 http://localhost:3000 >/dev/null 2>&1; then
+            echo "✅ Langfuse ready"
+            break
+          fi
+          sleep 2
+        done
+
+  langfuse:stop:
+    desc: Stop Langfuse
+    cmds:
+      - docker compose -f logging-impl/docker-compose.langfuse.yml down
+
+  langfuse:status:
+    desc: Langfuse health check
+    cmds:
+      - curl -f -m 5 http://localhost:3000 >/dev/null || exit 1
+      - echo "✅ Langfuse running"
+
+  langfuse:reset:
+    desc: Reset (stop + volumes; manual DROP DB langfuse;)
+    cmds:
+      - docker compose -f logging-impl/docker-compose.langfuse.yml down -v
+      - rm -rf traces/langfuse-minio/*
+
+  langfuse:logs:
+    desc: Tail Langfuse web logs
+    cmds:
+      - docker compose -f logging-impl/docker-compose.langfuse.yml logs -f web
+
+  # ---------------------------------------------------------------------------
+  # AIProxy (aiproxy/ - LiteLLM wrapper)
+  # ---------------------------------------------------------------------------
+  aiproxy:install:
+    desc: Install aiproxy editable
+    cmds:
+      - cd aiproxy
+      - uv venv .venv-aiproxy || true
+      - uv pip install -e .
+
+  aiproxy:start:
+    desc: Start aiproxy (:4000)
+    deps: [langfuse:status, schema:apply]
+    cmds:
+      - cd aiproxy
+      - export AIPROXY_DB_DSN="postgresql://postgres:postgres@localhost:5432/ai"
+      - nohup aiproxy serve > aiproxy.log 2>&1 &
+
+  aiproxy:stop:
+    desc: Stop aiproxy
+    cmds:
+      - pkill -f "aiproxy serve" || true
+
+  aiproxy:status:
+    desc: aiproxy health
+    cmds:
+      - curl -f http://localhost:4000/v1/models >/dev/null || exit 1
+      - echo "✅ aiproxy ready (:4000)"
+
+  aiproxy:logs:
+    desc: Tail aiproxy logs
+    cmds:
+      - cd aiproxy
+      - tail -f aiproxy.log || tail -f .venv-aiproxy/logs/*
+
+  # ---------------------------------------------------------------------------
+  # Tracing Utils (Langfuse API stubs; adapt salvage-ai full scripts later)
+  # ---------------------------------------------------------------------------
+  tracing:last:
+    desc: Fetch latest trace (JSON to traces/latest.json)
+    deps: [langfuse:status]
+    cmds:
+      - mkdir -p traces
+      - curl "http://localhost:3000/api/public/traces?limit=1&include_input_output=true" | jq > traces/latest-trace.json
+      - echo "Latest trace → traces/latest-trace.json"
+
+  tracing:clear:
+    desc: Delete all traces via API (irreversible)
+    cmds:
+      - curl -X DELETE "http://localhost:3000/api/public/traces"
+
+# Quick Start: task langfuse:start && task schema:apply && task aiproxy:install && task aiproxy:start

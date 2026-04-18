@@ -1,0 +1,9 @@
+node_modules/**
+.git/**
+.idea/**
+.venv/**
+data/**
+notes/**
+backup/**
+
+.pnpm-store/**

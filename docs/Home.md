@@ -42,12 +42,14 @@ mindmap
 - [[LangGraph Orchestration]]
 - [[Hybrid Prompt Router]]
 - [[Observability & Tracing]]
+- [[AIProxy-Logging-Tracing]]
 - [[DevOps & Deployment]]
 
 ## Business & Product
 - [[user-stories]] - Ranked user stories, salvage yard research, innovative features, and success metrics
 - [[business-model]]
 - [[db-proposal]]
+- [[db-schema]] - RecycleAI database schema and key relationships
 
 ## Usage Guide for Agents
 Follow [[wikilinks]] for graph navigation. Links optimized for Obsidian graph view.

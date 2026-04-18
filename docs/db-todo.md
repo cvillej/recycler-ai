@@ -21,7 +21,7 @@
 
 ### Phase 0: Final Planning & Design (COMPLETED)
 
-**All Phase 0 tasks have been completed.** Detailed deliverables are below and have been added to this file for reference.
+**All Phase 0 tasks have been completed.** Detailed deliverables (schema design, synthesis rules, realism criteria, and migration plan) are embedded below and in the file for reference.
 
 **1. Complete Schema Design for `recycleai` Schema**
 
@@ -220,20 +220,29 @@ Scale: ~1,500–4,000 records per new profile (total ~200k–400k new records in
 
 **Phase 0 is now complete.** All detailed design, rules, criteria, and the migration plan are documented above and in this file.
 
-### Phase 1: Create New Schema (`recycleai`)
-- [ ] Create the new `recycleai` schema (completely separate from old `salvage`)
-- [ ] Create all new tables with proper constraints, PKs, FKs (`vehicles`, `parts`, `grok_sold_listings`, `yard_locations`, `sales`, `makes`, `models`, `part_types`, `condition_grades`, updated `yard_sales`, `salvage_auctions`, taxonomy/alias tables, supporting tables)
-- [ ] Define and create indexes optimized for key user story queries (auction valuation/part-out calculations, aging/slow-mover reports, location lookup, profitability by model/part)
-- [ ] Define views, functions, or materialized views for common operations (estimated part-out value, aging calculations, top valuable parts, inventory visibility, slow movers)
-- [ ] Add all foreign key constraints, check constraints, and any triggers needed for data integrity
+### Phase 1: Create New Schema (`recycleai`) (COMPLETED)
+- [x] Create the new `recycleai` schema (completely separate from old `salvage`)
+- [x] Create all new tables with proper constraints, PKs, FKs (`vehicles`, `parts`, `grok_sold_listings`, `yard_locations`, `sales`, `makes`, `models`, `part_types`, `condition_grades`, updated `yard_sales`, `salvage_auctions`, taxonomy/alias tables, supporting tables)
+- [x] Define and create indexes optimized for key user story queries (auction valuation/part-out calculations, aging/slow-mover reports, location lookup, profitability by model/part)
+- [x] Define views, functions, or materialized views for common operations (estimated part-out value, aging calculations, top valuable parts, inventory visibility, slow movers)
+- [x] Add all foreign key constraints, check constraints, and any triggers needed for data integrity
 
-### Phase 2: Migrate Existing Real Data (from `salvage` to `recycleai`)
+**Files created**:
+- `db/schema.sql` (single source of truth for DDL — run this file only)
+- `docs/db-schema.md` (describes schema and relationships with link to schema.sql)
+- `docs/Home.md` (updated with [[db-schema]] link in Business & Product section)
+
+**Note**: Schema DDL is ready but has **not yet been executed** against the database (connection to `salvage` DB currently fails; `recycleai` schema/tables do not exist yet). Phase 2 migration cannot begin until schema is applied.
+
+### Phase 2: Migrate Existing Real Data (from `salvage` to `recycleai`) (NOT STARTED)
 - [ ] Migrate core taxonomy tables (`makes`, `models`, `part_types`, `condition_grades`, `ebay_categories`, `ebay_condition_mappings`, alias tables)
 - [ ] Migrate `users`, `user_yard_access` (or equivalent), and any yard-related configuration data
 - [ ] Migrate/copy the 99 real paid records from `ebay_sold_listings` into the new `grok_sold_listings` table with `data_source = 'paid_ebay'`
 - [ ] Migrate existing `vehicles` data into new schema (populate new temporal fields with reasonable values based on research)
 - [ ] Migrate/rename data from `inventories` to new `parts` table (map all columns, generate realistic `acquired_date`, `location_id`, and other new fields)
 - [ ] Migrate existing `yard_sales` and `salvage_auctions` with updated foreign keys and relationships to the new schema
+
+**Status**: Blocked until `db/schema.sql` is executed (see Phase 1 note). Matches the detailed mappings and order in the latest Cursor plan (`phase_2_migrate_real_data_from_salvage_to_recycleai_(with_column_mappings)_2076be3a.plan.md`).
 
 ### Phase 3: Augment with Realistic Synthesized Data (to reach exactly 200 profiles)
 - [ ] Research and finalize list of additional ~101 profiles to reach exactly 200 total (heavy on trucks like Silverado/Ram, Hondas, Toyotas, Jeeps, with realistic part mix and aging distribution based on industry data)

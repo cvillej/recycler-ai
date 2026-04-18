@@ -14,10 +14,10 @@ All interactions and system behavior should be logged and monitored for accounta
 
 ## Explicit Implementation Requirements
 ### 1. Instrumentation Setup
-- OpenTelemetry (OTel) must be initialized:
-    - Example snippet: `registerOTel({ serviceName: 'your-service-name' })`.
-- Ensure that LangSmith instrumentation is enabled for the agent graph with proper environment configuration.
-- Every function of interest (e.g., routing decisions, prompt executions) MUST emit trace spans/events.
+- Langfuse SDK/OTEL: See [[AIProxy-Logging-Tracing]] for JS/Python details.
+  - TS: `@langfuse/core` handler (sessionId=thread_id).
+  - Python: `langfuse_otel` callback in LiteLLM config.yaml.
+- Every key event (routing, prompts, LLM calls) auto-traced via handlers/callbacks.
 
 ### 2. Trace Structure
 - Each log, trace, or span must contain:

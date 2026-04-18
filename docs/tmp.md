@@ -1,0 +1,1 @@
+I would like you to look at @/Users/jfortney/dev/recycle-ai/aiproxy/architecture.md.  This dir is where we are going to implment the logging for the plan.  Also look at @/Users/jfortney/dev/recycle-ai/README.MD to understand what logging we need and how it works.  We were originally planning on 
