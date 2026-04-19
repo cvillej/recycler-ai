@@ -1,8 +1,11 @@
 ---
 title: Recycle AI Documentation Home
 tags: [obsidian, recycle-ai, home]
-published: true
 aliases: [Overview, MOC]
+status: stable
+published: true
+created: 2026-01-01
+updated: 2026-04-18
 ---
 
 # Welcome to Recycle AI Documentation
@@ -13,10 +16,10 @@ This vault contains all necessary documentation for Recycle AI, structured in an
 Recycler AI is a modular AI agent system with explicit state management (Zod schemas), hybrid routing, LangGraph orchestration, and extensible prompts. Current skeleton is placeholder; aspirational architecture includes full layers.
 
 ## Documentation Structure
-### Current Skeleton
-1. `apps/web/index.tsx`: Basic UI placeholder.
-2. `apps/api/healthz.ts`: Health API.
-3. `openrouter-proxy.js`: LLM proxy.
+### Current Structure
+1. `app/layout.tsx`: Root layout for the Next.js application.
+2. `app/page.tsx`: Main home page component.
+3. `app/api/chat/route.ts`: API route for chat functionality using Vercel AI SDK.
 
 ### Aspirational Architecture
 ```mermaid
