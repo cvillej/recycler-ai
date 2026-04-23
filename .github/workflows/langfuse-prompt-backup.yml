@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.LANGFUSE_PAT }}   # ← Using your PAT
+          token: ${{ secrets.LANGFUSE_PAT }}
           fetch-depth: 0
 
       - name: 🔍 Debug Payload
@@ -25,24 +25,31 @@ jobs:
           echo "Version : ${{ github.event.client_payload.prompt.version }}"
           echo "Labels  : ${{ join(github.event.client_payload.prompt.labels, ', ') }}"
 
-      - name: Save Prompt Files
+      - name: Save Clean Prompt File (One file per prompt)
         run: |
           mkdir -p prompts
+          
+          # Make safe filename
           SAFE_NAME=$(echo "${{ github.event.client_payload.prompt.name }}" | tr '/' '_' | tr ' ' '_')
-          VERSION="${{ github.event.client_payload.prompt.version }}"
-
+          
+          # Save ONLY the clean prompt text (easy to read in GitHub)
           echo '${{ toJson(github.event.client_payload.prompt.prompt) }}' > "prompts/${SAFE_NAME}.prompt"
-          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${VERSION}.json"
+          
+          # Optional: Also save full versioned metadata (recommended for history)
+          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${{ github.event.client_payload.prompt.version }}.json"
 
-          echo "✅ Files created:"
-          ls -la prompts/
+          echo "✅ Saved clean prompt: prompts/${SAFE_NAME}.prompt"
+          echo "✅ Also saved versioned JSON for history"
 
-      - name: Commit & Push
+      - name: Commit & Push (Handles double triggers)
         run: |
           git config user.name "Langfuse Bot"
           git config user.email "langfuse-bot@users.noreply.github.com"
 
           git add prompts/
-          git commit -m "chore(langfuse): backup '${{ github.event.client_payload.prompt.name }}' v${{ github.event.client_payload.prompt.version }}" || echo "No changes to commit"
+          
+          git commit -m "chore(langfuse): update '${{ github.event.client_payload.prompt.name }}' to v${{ github.event.client_payload.prompt.version }}" || echo "No changes to commit"
+          
+          git pull --rebase origin main || echo "No pull needed"
           git push
-          echo "✅ Successfully committed and pushed!"
+          echo "✅ Successfully pushed clean prompt file!"
