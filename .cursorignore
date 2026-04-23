@@ -5,6 +5,6 @@ node_modules/**
 data/**
 **/notes
 **/backup
-
 .pnpm-store/**
-
+**/todo
+**/todo-app
