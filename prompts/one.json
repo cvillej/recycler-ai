@@ -1,18 +1,18 @@
 {
   "commitMessage": null,
   "config": {},
-  "createdAt": "2026-04-23T11:09:45.691Z",
+  "createdAt": "2026-04-23T11:11:37.064Z",
   "createdBy": "cmnlmy0go0002qy07vbcoekyk",
-  "id": "9b3674bb-b031-4227-b305-ec167d1519fb",
+  "id": "3917ca8a-a395-494f-984b-a12108d9d2ec",
   "labels": [
     "production",
     "latest"
   ],
   "name": "one",
   "projectId": "production",
-  "prompt": "aaaaaa",
+  "prompt": "aaaaaabbbbb",
   "tags": [],
   "type": "text",
-  "updatedAt": "2026-04-23T11:09:45.691Z",
-  "version": 19
+  "updatedAt": "2026-04-23T11:11:37.064Z",
+  "version": 20
 }
