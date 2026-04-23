@@ -1,9 +1,0 @@
-# =============================================================================
-# RecycleAI — docker-compose.langfuse.yml (Langfuse v3)
-# =============================================================================
-#
-# STORAGE STRATEGY:
-#   LOCAL : MinIO in Docker (./traces/langfuse-minio). Zero AWS. S3 API only.
-#           Swap LANGFUSE_S3_*_ENDPOINT + credentials for real AWS S3 on deploy.
-#   AWS   : Set LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT="" (use default AWS endpoint)
-#           and supply real AWS

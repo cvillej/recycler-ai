@@ -3,8 +3,8 @@ node_modules/**
 .idea/**
 .venv/**
 data/**
-**/notes/
-**/backup/
+**/notes
+**/backup
 
 .pnpm-store/**
 

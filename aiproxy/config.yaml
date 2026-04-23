@@ -1,5 +1,0 @@
-litellm_settings:
-  callbacks: ["langfuse_otel"]
-  # Add budgets, caching, etc. as needed
-  # model_list: []  # Loaded from env or file
-  # key_management_system: "env"  # API keys from env

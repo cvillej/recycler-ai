@@ -1,0 +1,42 @@
+lastUpdated: '2026-04-22T19:29:42.299Z'
+todos:
+  - id: todo-1776886075452
+    title: aa
+    description: aa
+    status: in_progress
+    subtodos: []
+  - id: todo-001
+    title: Implement isolated Todo App for development workflow
+    status: done
+    priority: high
+    labels:
+      - ui
+      - devtools
+      - todo-app
+    description: >-
+      Create self-contained todo management UI/API in todo-app/ following strict
+      directory rules from user query and ui-layer/dev-env docs. Must support
+      YAML sync with root/todo/todos.yaml, modern React UI, Hono backend.
+    subtodos:
+      - id: todo-001-1
+        title: Setup todo-app/ structure with Vite+React+Tailwind+Hono
+        status: in_progress
+      - id: todo-001-2
+        title: Implement Hono API for CRUD on todos.yaml
+        status: pending
+      - id: todo-001-3
+        title: Build rich React UI components in todo/todo/
+        status: pending
+      - id: todo-001-4
+        title: >-
+          Add robust Taskfile tasks for start/stop/restart with background
+          server
+        status: pending
+      - id: todo-001-5
+        title: >-
+          Ensure UI refreshes on manual disk changes to YAML (via polling or
+          HMR)
+        status: pending
+      - id: todo-001-1776886182299
+        title: hello
+        status: unstarted

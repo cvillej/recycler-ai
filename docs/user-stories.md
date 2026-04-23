@@ -1,176 +1,81 @@
-# User Stories & Feature Requirements
 
-**Last Updated:** April 13, 2026  
-**Research Sources:** Industry reports (Financial Models Lab, Auto Salvage Consultants), salvage yard software analysis (YardSmart, Dismantly, Hollander), owner feedback, KPI research, and competitive gap analysis.
+# user-stories.md
+**Version:** April 20, 2026  
+**Status:** Updated (Zoom Level 1)
 
-This document captures **what salvage yard owners, dismantlers, and sales staff actually need**. It ranks features by business value (revenue impact > operational efficiency > risk reduction > nice-to-have). 
+As the Product Owner of the AI Yard Assistant, I am building a tool that becomes indispensable to salvage yard owners, operators, yard workers, and managers by saving them time, reducing risk at auction, and increasing profitability in a very tough, low-margin business.
 
-It is informed by:
-- **Core Business Reality**: 80%+ gross margins come from fast-moving, high-value used parts. Slow inventory kills profitability. Auction buying decisions are make-or-break.
-- **Pain Points** of existing tools: Poor real-time visibility, manual processes, disconnected systems, weak analytics, complex UIs for non-technical staff.
-- **Opportunities**: Modern AI, mobile-first design, proactive intelligence, and beautiful reporting can create a significant competitive advantage.
+## Target Customer Profile
 
-**Link back to [[Home]]** (added to overview).
+Our customers run small-to-medium salvage yards. They buy at auction, part out vehicles, sell parts online and locally, and fight every day to turn a profit. They deal with:
+- Thin margins and cash-flow pressure
+- Fast-moving auctions where hesitation costs money
+- Aging inventory eating up space and capital
+- Yard workers who need to work quickly and accurately outdoors
+- Lack of real-time visibility into what they own and what it’s worth
 
----
+They will only adopt and pay for a tool that delivers **clear, immediate ROI**.
 
-## Ranked User Stories & Features
+## Core User Stories
 
-### Priority 1: Auction Intelligence (Highest Value)
-**As a yard owner**, I want intelligent auction recommendations so I only buy vehicles with strong part-out margins.
+### As a Salvage Yard Owner/Operator, I want to...
 
-**Key Questions**:
-- "Is this specific car (VIN/make/model/year) at auction valuable to us?"
-- "What is the estimated part-out value vs purchase price + costs?"
-- "Which high-demand parts would this vehicle yield?"
+- Get **proactive, high-confidence bidding recommendations** at auction that factor in my current inventory, cash on hand, recent sales, storage constraints, and my personal risk tolerance.
+- Receive a **rich notification widget** or push notification the moment a high-value part or vehicle I should bid on appears — even if I’m not actively using the app.
+- When I lose an auction (e.g. eBay or Copart), immediately see a widget with actionable options: “Increase today’s bidding limit by 2”, “Find 3 similar parts already in my yard”, “Set alert for next matching lot”.
+- Take a photo of any part on my phone and instantly get an AI valuation, condition grade, and suggested selling price based on current market comps.
+- Open the app at any time and see a clear dashboard of aging inventory with specific, prioritized actions (“Drop price on these 14 transmissions by 15%”, “Bundle these 6 fenders”).
 
-**Desired Output**:
-- Mobile push + SMS/email alert: "Copart Lot #C-48219 (2021 Honda CR-V) — **Projected Margin: 68%** (High confidence). Top parts: Engine, Transmission."
-- One-tap "Set Watch" that monitors the auction and notifies if price drops into profitable range.
-- Visual dashboard showing breakdown by part type with market comps (our sales + eBay sold data).
+### As a Yard Worker, I want to...
 
-**Differentiator**: AI-powered "Part-Out Value Estimator" using computer vision on auction photos + predictive demand modeling. Existing tools are mostly manual.
+- Walk up to a newly arrived vehicle, take 2–3 photos, and have the AI automatically create the inventory record with make, model, year, condition notes, and suggested part values.
+- Use voice commands while driving a forklift or walking the yard to log parts without stopping (“Log 4 doors from the blue CR-V, good condition”).
+- Ask the app “Where is the transmission from the 2019 Honda?” and see an AR arrow or map highlight showing the exact location.
 
----
+### As a Manager, I want to...
 
-### Priority 2: Real-Time Inventory Visibility & Location
-**As a sales person/dismantler**, I want to know instantly what we have and exactly where it is.
+- See a live profitability view that shows which parts are making money and which are losing money due to age.
+- Get an alert when a worker logs a part that is significantly under- or over-valued compared to market.
+- Easily assign permissions so yard workers can only log intake while managers can approve valuations and bids.
 
-**Key Questions**:
-- "Do we have any [Model X] on the yard? How many? What condition?"
-- "Where is the transmission from VIN [ABC123]?"
-- "What parts do we have from this specific vehicle?"
+## Feature Gating & Upgrade Stories
 
-**Desired Output**:
-- Mobile-first search with voice input ("Hey Recycler, where's the engine from that blue CR-V?").
-- AR overlay (phone camera points at yard row → highlights exact bin/shelf).
-- Digital "yard map" with heat maps showing inventory density and aging.
+**As a user on the free tier, I want to...**
 
-**Must-Have**: Structured `yard_locations` (row/bay/shelf) with barcode/QR support. Real-time sync between dismantlers and sales staff.
+- Ask the agent for any advanced feature (proactive alerts, advanced bidding recommendations, AR location, etc.) and receive a helpful response that clearly explains the limitation and shows the exact upgrade path with real ROI (“Pro users won 23% more profitable auctions last month”).
+- Be offered a **one-tap 14-day Pro trial** of the requested feature so I can experience the value immediately.
+- Have the agent continue helping with the features I do have access to instead of just saying “upgrade”.
 
-**Differentiator**: Voice + AR features. Most current software is desktop-only or clunky mobile.
+**As a user who hits a limit (tokens, daily bids, alerts, etc.), I want to...**
 
----
+- Be told in a friendly, non-frustrating way that I’ve reached my limit.
+- Be offered relevant upgrade or top-up options with clear next steps and ROI messaging.
+- Have the agent remember my context and continue assisting with available features.
 
-### Priority 3: Aging & Slow-Mover Intelligence
-**As a yard owner**, I want to know what inventory is killing my cash flow so I can take action (discount, bundle, scrap).
+## External System Notification Stories
 
-**Key Questions**:
-- "What are our slowest moving parts/vehicles?"
-- "What has been sitting >90/180 days? By value?"
-- "Which models have the worst turnover?"
+**As a user, I want to...**
 
-**Desired Output**:
-- **PDF Report** (downloadable, printable, shareable with accountant): "Aging Inventory Report — Q2 2026" with charts, top 20 offenders, recommended actions (discount 30%, bundle with fast-movers, scrap).
-- Proactive weekly email digest: "Warning: 47 parts aged >120 days tying up $18.4k."
-- One-click "Create Bundle Sale" or "List on eBay" from the report.
+- Be notified in the chat or via a rich UI widget the moment an external system has important information (e.g. “You were outbid on the 2019 Honda CR-V transmission by $120”).
+- See actionable buttons directly in the widget: “Increase today’s bidding limit by 3”, “Show similar parts in my yard”, “Set alert for next matching auction”, “View full market comps”.
+- Have the notification appear in the current chat if I’m actively using the app, or as a push notification if I’m not.
 
-**Differentiator**: Predictive "risk of becoming dead stock" score using ML on historical sales velocity, seasonality, and regional demand.
+## Monetization & Onboarding Stories
 
----
+**As the Product Owner, I want to...**
 
-### Priority 4: Pricing & Profitability Intelligence
-**As a yard owner/sales manager**, I want data-driven pricing and profitability insights.
+- Offer a generous free trial period (30–60 days of full Pro features) so users can experience proactive alerts, bidding intelligence, and valuation tools before deciding to pay.
+- Make upgrade prompts feel helpful rather than salesy — always tie them to real value the user has already seen.
+- Allow users to start with a free Basic tier and upgrade to Pro or Enterprise as they see clear ROI.
+- Support flexible pricing: monthly, yearly (with discount), per-yard for multi-yard operations, and pay-as-you-go for heavy users.
 
-**Key Questions**:
-- "What are our most valuable parts right now?"
-- "How does our pricing compare to eBay sold comps?"
-- "Which models/parts give us the best margins?"
+## Success Metrics (Product Owner view)
 
-**Desired Output**:
-- Real-time "Top 50 Most Valuable Parts" dashboard with current listed price vs recent sale comps.
-- Dynamic pricing suggestions ("Raise price on these 12 transmissions by 18% based on demand").
-- Monthly PDF "Profitability Report" by make/model/part category.
+- High trial-to-paid conversion rate
+- Strong daily active usage after the free period
+- Measurable ROI for customers (more profitable auctions won, reduced aging inventory, time saved)
+- High engagement with proactive notifications and actionable widgets
+- Positive feedback on how the app handles feature limits and external notifications
 
-**Differentiator**: AI dynamic pricing engine that learns from our sales + external market data. Integration with eBay/Facebook Marketplace for automated listing optimization.
+This product will succeed by becoming the AI partner that helps salvage yards buy smarter, sell faster, and waste less — while making the decision to pay for it feel obvious and low-risk.
 
----
-
-### Priority 5: Proactive Alerts & Notifications
-**As a yard owner**, I want the system to tell me what I need to know without constant checking.
-
-**Examples**:
-- Auction alerts (as described in Priority 1).
-- "Low stock on high-demand part: 2018-2022 Honda CR-V transmissions (only 2 left, selling 3/month)."
-- "Slow mover alert: 14 engines aged >150 days — recommended action: 40% discount bundle."
-- End-of-day summary SMS: "Today: 7 sales ($4,280), 3 new vehicles acquired."
-
-**Desired Output**: Configurable notification preferences (SMS for urgent, email digest for reports, in-app for everything else). Avoid notification fatigue with smart batching.
-
-**Differentiator**: Context-aware "AI Yard Assistant" that learns owner preferences over time.
-
----
-
-### Priority 6: Workflow Automation & Mobile-First Operations
-**As a dismantler**, I want fast, mobile tools that reduce paperwork.
-
-**Features**:
-- Photo → AI part identification and condition grading on intake.
-- Voice logging while working ("Engine from VIN 1234, excellent condition, bin A-12").
-- Digital dismantle checklists with Hollander-style interchange suggestions.
-- One-tap "Mark as Sold" with automatic inventory update and sales record creation.
-
-**Must-Have**: Fully functional offline mobile app that syncs when back in coverage.
-
----
-
-### Additional High-Value Differentiators (Outside the Box)
-
-**7. Predictive Sourcing Recommendations**
-- "Based on current inventory gaps and market trends, you should target these 5 vehicles at auction this week."
-
-**8. Competitive Intelligence**
-- Monitor what similar parts are selling for on eBay/Facebook Marketplace in your region.
-
-**9. Sustainability & Compliance Dashboard**
-- Automatic carbon impact reporting ("Your yard diverted X tons from landfill this month").
-- One-click regulatory report generation (VIN compliance, scrap reporting).
-
-**10. Customer-Facing Features**
-- Public "Live Yard Inventory" microsite showing what’s available (drives foot traffic).
-- Customer portal for reservations or "notify me when available."
-
-**11. Smart Bundling Engine**
-- AI suggests profitable part bundles ("Customer buying transmission? Offer matching torque converter at 15% discount — we have 4 aging in inventory").
-
-**12. Financial Integration**
-- Automatic export to QuickBooks with proper COGS allocation per vehicle.
-- "Vehicle ROI Report" showing profit per car dismantled.
-
----
-
-## Must-Haves vs True Differentiators
-
-**Must-Haves** (Table Stakes):
-- Real-time inventory with location tracking
-- Strong auction valuation tools
-- Aging/slow-mover reports (PDF + alerts)
-- Mobile-first design with offline support
-- Clean integration between vehicles → parts → sales
-- Basic compliance reporting
-
-**True Differentiators** (What makes this app superior):
-- Proactive AI intelligence (doesn't just answer questions — anticipates them)
-- Beautiful, actionable reporting (PDFs that look professional)
-- Smart notification system that respects user attention
-- Computer vision + voice interfaces for yard workers
-- Predictive analytics for buying and pricing
-- Seamless auction monitoring + alerting
-- Sustainability angle (increasingly important)
-
----
-
-## Next Steps Recommendations
-
-1. Implement core schema from `db-proposal.md` with the enhancements noted there (temporal fields, structured locations, valuation support).
-2. Prioritize mobile app experience (this is a major gap in many existing tools).
-3. Build the "AI Yard Assistant" as the unifying interface.
-4. Start with auction intelligence and aging reports — these have the highest ROI.
-
-**Links**:
-- [[Home]] (Overview)
-- [[db-proposal]]
-- [[business-model]]
-- [[DevOps-Deployment]]
-
-This document should evolve as we validate with real yard owners.
