@@ -1,0 +1,18 @@
+{
+  "commitMessage": null,
+  "config": {},
+  "createdAt": "2026-04-23T11:01:58.295Z",
+  "createdBy": "cmnlmy0go0002qy07vbcoekyk",
+  "id": "47764ce2-34d2-4d8d-aecc-cfc060c3f16b",
+  "labels": [
+    "production",
+    "latest"
+  ],
+  "name": "one",
+  "projectId": "production",
+  "prompt": "dd",
+  "tags": [],
+  "type": "text",
+  "updatedAt": "2026-04-23T11:01:58.295Z",
+  "version": 17
+}
