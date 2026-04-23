@@ -1,43 +1,40 @@
-name: Langfuse Prompt Backup & CI
+name: Langfuse Prompt Backup
 
 on:
   repository_dispatch:
     types: [langfuse-prompt-update]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   backup:
     runs-on: ubuntu-latest
-    # TEMPORARY: Removed the 'latest' filter so we can see what's happening
-    # if: always()   # We'll add this back later
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.LANGFUSE_PAT }}   # ← Using your PAT
           fetch-depth: 0
 
       - name: 🔍 Debug Payload
         run: |
-          echo "📌 Prompt Name : ${{ github.event.client_payload.prompt.name }}"
-          echo "📌 Version     : ${{ github.event.client_payload.prompt.version }}"
-          echo "📌 Labels      : ${{ join(github.event.client_payload.prompt.labels, ', ') }}"
-          echo "📌 Action      : ${{ github.event.client_payload.action }}"
-          echo "📌 Has 'latest': ${{ contains(github.event.client_payload.prompt.labels, 'latest') }}"
-          echo "📌 Has 'production': ${{ contains(github.event.client_payload.prompt.labels, 'production') }}"
+          echo "Name    : ${{ github.event.client_payload.prompt.name }}"
+          echo "Version : ${{ github.event.client_payload.prompt.version }}"
+          echo "Labels  : ${{ join(github.event.client_payload.prompt.labels, ', ') }}"
 
       - name: Save Prompt Files
         run: |
           mkdir -p prompts
-          PROMPT_NAME="${{ github.event.client_payload.prompt.name }}"
-          PROMPT_VERSION="${{ github.event.client_payload.prompt.version }}"
-          SAFE_NAME=$(echo "$PROMPT_NAME" | tr '/' '_' | tr ' ' '_')
+          SAFE_NAME=$(echo "${{ github.event.client_payload.prompt.name }}" | tr '/' '_' | tr ' ' '_')
+          VERSION="${{ github.event.client_payload.prompt.version }}"
 
           echo '${{ toJson(github.event.client_payload.prompt.prompt) }}' > "prompts/${SAFE_NAME}.prompt"
-          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${PROMPT_VERSION}.json"
+          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${VERSION}.json"
 
-          echo "✅ Files written to prompts/:"
+          echo "✅ Files created:"
           ls -la prompts/
 
       - name: Commit & Push
@@ -47,18 +44,5 @@ jobs:
 
           git add prompts/
           git commit -m "chore(langfuse): backup '${{ github.event.client_payload.prompt.name }}' v${{ github.event.client_payload.prompt.version }}" || echo "No changes to commit"
-          git push || echo "Push failed (maybe already up to date)"
-          echo "✅ Commit & Push step completed"
-
-  deploy:
-    needs: backup
-    runs-on: ubuntu-latest
-    if: contains(github.event.client_payload.prompt.labels, 'production')
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy to Production
-        run: |
-          echo "🚀 Deploying ${{ github.event.client_payload.prompt.name }} v${{ github.event.client_payload.prompt.version }}"
+          git push
+          echo "✅ Successfully committed and pushed!"
