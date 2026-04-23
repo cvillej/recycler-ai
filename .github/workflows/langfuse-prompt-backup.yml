@@ -1,0 +1,93 @@
+name: Langfuse Prompt Backup & CI
+
+on:
+  repository_dispatch:
+    types: [langfuse-prompt-update]
+  workflow_dispatch:   # Allows manual testing from GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    # Only process the newest version (avoids duplicate runs when 'latest' label moves)
+    if: >
+      github.event_name != 'repository_dispatch' ||
+      contains(github.event.client_payload.prompt.labels, 'latest')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}   # Required to commit and push
+
+      - name: Save Prompt to Git (Clean Structure)
+        run: |
+          mkdir -p prompts
+
+          # Extract variables from Langfuse payload
+          PROMPT_NAME="${{ github.event.client_payload.prompt.name }}"
+          PROMPT_VERSION="${{ github.event.client_payload.prompt.version }}"
+          ACTION="${{ github.event.client_payload.action || 'updated' }}"
+
+          # Make filename safe (replace / with _ if you use folders in prompt names)
+          SAFE_NAME=$(echo "$PROMPT_NAME" | tr '/' '_' | tr ' ' '_')
+
+          # 1. Save clean prompt text (recommended - easy to read in GitHub)
+          echo '${{ toJson(github.event.client_payload.prompt.prompt) }}' > "prompts/${SAFE_NAME}.prompt"
+
+          # 2. Save full metadata as JSON (for complete history)
+          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${PROMPT_VERSION}.json"
+
+          echo "✅ Saved prompt: ${PROMPT_NAME} (v${PROMPT_VERSION})"
+          echo "   → prompts/${SAFE_NAME}.prompt"
+          echo "   → prompts/${SAFE_NAME}_v${PROMPT_VERSION}.json"
+
+      - name: Commit and Push Backup
+        run: |
+          git config user.name "Langfuse Bot"
+          git config user.email "langfuse-bot@users.noreply.github.com"
+
+          # Check if there are actual changes
+          if git diff --quiet prompts/; then
+            echo "No changes to commit for this prompt."
+          else
+            git add prompts/
+            
+            git commit -m "chore(langfuse): backup prompt '${{ github.event.client_payload.prompt.name }}' v${{ github.event.client_payload.prompt.version }}
+
+          Action: ${{ github.event.client_payload.action || 'updated' }}
+          Labels: ${{ join(github.event.client_payload.prompt.labels, ', ') }}" \
+            || echo "Nothing to commit (already up to date)"
+
+            git push
+            echo "✅ Successfully committed and pushed prompt backup to GitHub"
+          fi
+
+      - name: Debug Payload (optional - remove after testing)
+        if: false  # Change to 'true' when you want to see full payload
+        run: |
+          echo "Full Langfuse Payload:"
+          echo '${{ toJson(github.event) }}' | jq .
+
+  deploy:
+    needs: backup
+    runs-on: ubuntu-latest
+    
+    # Only deploy if the prompt has the 'production' label
+    if: >
+      contains(github.event.client_payload.prompt.labels, 'production')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Prompt to Production
+        run: |
+          echo "🚀 Deploying prompt: ${{ github.event.client_payload.prompt.name }} v${{ github.event.client_payload.prompt.version }}"
+          
+          # Add your actual deployment commands here
+          # Examples:
+          # npm run deploy-prompt -- ${{ github.event.client_payload.prompt.name }}
+          # python scripts/deploy_prompt.py "${{ github.event.client_payload.prompt.name }}"
+          
+          echo "Deployment completed for production prompt."
