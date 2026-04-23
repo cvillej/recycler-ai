@@ -12,7 +12,7 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     
-    # Only run on the latest version → greatly reduces conflicts
+    # Only run for the latest version to avoid conflicts
     if: contains(github.event.client_payload.prompt.labels, 'latest')
 
     steps:
@@ -22,45 +22,33 @@ jobs:
           token: ${{ secrets.LANGFUSE_PAT }}
           fetch-depth: 0
 
-      - name: Save Clean Prompt (Latest only)
+      - name: Save Full Prompt Metadata (Single File)
         run: |
           mkdir -p prompts
+          
+          # Create safe filename from prompt name
           SAFE_NAME=$(echo "${{ github.event.client_payload.prompt.name }}" | tr '/' '_' | tr ' ' '_')
           
-          # Always write the latest prompt text
-          echo '${{ toJson(github.event.client_payload.prompt.prompt) }}' > "prompts/${SAFE_NAME}.prompt"
-          
-          # Keep versioned history (safe, different filenames)
-          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${{ github.event.client_payload.prompt.version }}.json"
+          # Save FULL metadata as JSON (this is what you asked for)
+          echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}.json"
 
-          echo "✅ Updated prompts/${SAFE_NAME}.prompt"
+          echo "✅ Updated full metadata file: prompts/${SAFE_NAME}.json"
 
-      - name: Commit & Push (Conflict Resistant)
+      - name: Commit & Push
         run: |
           git config user.name "Langfuse Bot"
           git config user.email "langfuse-bot@users.noreply.github.com"
 
           git add prompts/
 
-          # Commit changes
-          git commit -m "chore(langfuse): update '${{ github.event.client_payload.prompt.name }}' to v${{ github.event.client_payload.prompt.version }}" || echo "No changes"
+          git commit -m "chore(langfuse): update '${{ github.event.client_payload.prompt.name }}' to v${{ github.event.client_payload.prompt.version }}" || echo "No changes to commit"
 
-          # Robust push strategy
-          echo "Pulling latest..."
+          # Robust push handling
           git pull --rebase origin main || true
-
-          # If conflict happens on .prompt file, take OUR version (the newer one)
-          if git status | grep -q "both modified"; then
-            echo "Conflict detected - keeping latest version"
-            git checkout --ours prompts/*.prompt
-            git add prompts/*.prompt
-            git rebase --continue || true
-          fi
-
-          # Final push
           git push || {
-            echo "Final push attempt with force-with-lease..."
-            git push --force-with-lease
+            echo "Retrying push..."
+            git pull --rebase origin main || true
+            git push
           }
 
-          echo "✅ Push completed successfully!"
+          echo "✅ Successfully pushed full prompt metadata"
