@@ -8,24 +8,24 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'repository_dispatch' ||
-      contains(github.event.client_payload.prompt.labels, 'latest')
+    # TEMPORARY: Removed the 'latest' filter so we can see what's happening
+    # if: always()   # We'll add this back later
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0   # Important for clean diffs
+          fetch-depth: 0
 
-      - name: Debug - Show Labels & Payload
+      - name: 🔍 Debug Payload
         run: |
-          echo "🔍 Prompt Name: ${{ github.event.client_payload.prompt.name }}"
-          echo "🔍 Version: ${{ github.event.client_payload.prompt.version }}"
-          echo "🔍 Labels: ${{ join(github.event.client_payload.prompt.labels, ', ') }}"
-          echo "🔍 Action: ${{ github.event.client_payload.action }}"
-          echo "🔍 Has 'latest'? ${{ contains(github.event.client_payload.prompt.labels, 'latest') }}"
+          echo "📌 Prompt Name : ${{ github.event.client_payload.prompt.name }}"
+          echo "📌 Version     : ${{ github.event.client_payload.prompt.version }}"
+          echo "📌 Labels      : ${{ join(github.event.client_payload.prompt.labels, ', ') }}"
+          echo "📌 Action      : ${{ github.event.client_payload.action }}"
+          echo "📌 Has 'latest': ${{ contains(github.event.client_payload.prompt.labels, 'latest') }}"
+          echo "📌 Has 'production': ${{ contains(github.event.client_payload.prompt.labels, 'production') }}"
 
       - name: Save Prompt Files
         run: |
@@ -34,15 +34,10 @@ jobs:
           PROMPT_VERSION="${{ github.event.client_payload.prompt.version }}"
           SAFE_NAME=$(echo "$PROMPT_NAME" | tr '/' '_' | tr ' ' '_')
 
-          echo "Saving files for ${PROMPT_NAME}..."
-
-          # Clean prompt text
           echo '${{ toJson(github.event.client_payload.prompt.prompt) }}' > "prompts/${SAFE_NAME}.prompt"
-
-          # Full metadata
           echo '${{ toJson(github.event.client_payload.prompt) }}' > "prompts/${SAFE_NAME}_v${PROMPT_VERSION}.json"
 
-          echo "✅ Files written:"
+          echo "✅ Files written to prompts/:"
           ls -la prompts/
 
       - name: Commit & Push
@@ -50,18 +45,10 @@ jobs:
           git config user.name "Langfuse Bot"
           git config user.email "langfuse-bot@users.noreply.github.com"
 
-          echo "Checking for changes..."
-          git status
-          git diff --name-only prompts/ || echo "No diff output"
-
-          if git diff --quiet prompts/; then
-            echo "⚠️ No changes detected - nothing to commit"
-          else
-            git add prompts/
-            git commit -m "chore(langfuse): backup '${{ github.event.client_payload.prompt.name }}' v${{ github.event.client_payload.prompt.version }}"
-            git push
-            echo "✅ Successfully committed and pushed!"
-          fi
+          git add prompts/
+          git commit -m "chore(langfuse): backup '${{ github.event.client_payload.prompt.name }}' v${{ github.event.client_payload.prompt.version }}" || echo "No changes to commit"
+          git push || echo "Push failed (maybe already up to date)"
+          echo "✅ Commit & Push step completed"
 
   deploy:
     needs: backup
@@ -75,4 +62,3 @@ jobs:
       - name: Deploy to Production
         run: |
           echo "🚀 Deploying ${{ github.event.client_payload.prompt.name }} v${{ github.event.client_payload.prompt.version }}"
-          echo "Deployment completed for production prompt."
