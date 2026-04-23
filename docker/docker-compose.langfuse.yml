@@ -1,0 +1,184 @@
+# =============================================================================
+# SalvageBid AI — docker-compose.langfuse.yml (Langfuse v3)
+# =============================================================================
+#
+# STORAGE STRATEGY:
+#   LOCAL : MinIO in Docker (./traces/langfuse-minio). Zero AWS. S3 API only.
+#           Swap LANGFUSE_S3_*_ENDPOINT + credentials for real AWS S3 on deploy.
+#   AWS   : Set LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT="" (use default AWS endpoint)
+#           and supply real AWS keys via aws.env or ECS task role.
+#
+# Uses external Homebrew Postgres (host.docker.internal:5432).
+# ClickHouse + Redis use named Docker volumes (persistent across restarts).
+# MinIO stores data in ./traces/langfuse-minio (local filesystem, inspectable).
+# =============================================================================
+
+# Shared env for both langfuse-web and langfuse-worker
+x-langfuse-env: &langfuse-env
+  NEXT_TELEMETRY_DISABLED: "1"
+  NODE_ENV: production
+  TELEMETRY_ENABLED: "false"
+  LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+
+  # External Homebrew Postgres (host.docker.internal = Mac host from Docker)
+  DATABASE_URL: postgresql://langfuse:langfuse@host.docker.internal:5432/langfuse
+
+  NEXTAUTH_URL: http://localhost:3000
+  SALT: changeme-salt
+  ENCRYPTION_KEY: 9f4774bb44f9fcab66c3674c0af47006db55a63d2dae4afa06eabcc004c57ac5
+
+  # ─────── ClickHouse ───────
+  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: clickhouse
+  CLICKHOUSE_PASSWORD: clickhouse
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+
+  # ─────── Redis ───────
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_AUTH: langfuse-redis-secret
+
+  # ─────── Blob storage: MinIO (local) ───────
+  # For AWS: remove ENDPOINT + FORCE_PATH_STYLE; set real bucket/region/keys
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: us-east-1
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+  # External URL so presigned URLs resolve from outside Docker
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://localhost:9090
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+
+  LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+
+services:
+  # ---------------------------------------------------------------------------
+  # Langfuse Worker — processes ingestion queue → ClickHouse
+  # ---------------------------------------------------------------------------
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3
+    restart: always
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *langfuse-env
+
+  # ---------------------------------------------------------------------------
+  # Langfuse Web — UI + API (port 3000)
+  # ---------------------------------------------------------------------------
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *langfuse-env
+      NEXTAUTH_SECRET: changeme-super-secret-32-chars-minimum
+
+      # ─────── HEADLESS INITIALIZATION ───────
+      LANGFUSE_INIT_ORG_ID: salvagebid-ai
+      LANGFUSE_INIT_ORG_NAME: SalvageBid AI
+      LANGFUSE_INIT_PROJECT_ID: production
+      LANGFUSE_INIT_PROJECT_NAME: production
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: pk-lf-9390cbcb-62d0-446d-81e3-aa5a4853b24a
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: sk-lf-882acc83-bd5f-4949-a3e8-286d87571885
+      LANGFUSE_INIT_USER_EMAIL: admin@salvagebid.local
+      LANGFUSE_INIT_USER_PASSWORD: ChangeMe123!Secure
+      LANGFUSE_INIT_USER_NAME: Admin
+
+  # ---------------------------------------------------------------------------
+  # ClickHouse — trace + observation storage
+  # ---------------------------------------------------------------------------
+  clickhouse:
+    image: docker.io/clickhouse/clickhouse-server
+    restart: always
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # Redis — ingestion queue between web and worker
+  # ---------------------------------------------------------------------------
+  redis:
+    image: docker.io/redis:7
+    restart: always
+    command: >
+      --requirepass langfuse-redis-secret
+      --maxmemory-policy noeviction
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "langfuse-redis-secret", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+
+  # ---------------------------------------------------------------------------
+  # MinIO — local S3-compatible blob storage (no AWS)
+  #   Data: ./traces/langfuse-minio (local filesystem)
+  #   S3 API: localhost:9090   Console: localhost:9091
+  # ---------------------------------------------------------------------------
+  minio:
+    image: docker.io/minio/minio
+    restart: always
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    ports:
+      - "127.0.0.1:9090:9000"
+      - "127.0.0.1:9091:9001"
+    volumes:
+      - ./traces/langfuse-minio:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  langfuse_clickhouse_data:
+    driver: local
+  langfuse_clickhouse_logs:
+    driver: local
+  langfuse_redis_data:
+    driver: local

@@ -8,3 +8,5 @@ data/**
 .pnpm-store/**
 **/todo
 **/todo-app
+
+**/traces
