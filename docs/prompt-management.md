@@ -1,6 +1,6 @@
 # prompt-management.md
-**Version:** April 20, 2026  
-**Status:** Draft (Zoom Level 2)
+**Version:** April 25, 2026  
+**Status:** Updated (Zoom Level 2) — LangGraph Skills + Inngest
 
 This document defines how prompts are selected, assembled, and managed in the AI Yard Assistant. The core abstraction is the `prompt_resolution` function.
 
@@ -30,7 +30,7 @@ async function prompt_resolution(
 
 This function takes rich context and produces:
 - The final compiled system prompt
-- The filtered list of MCP tools
+- The filtered list of MCP tools (including Skills)
 - Metadata for observability and caching
 
 ### PromptResolutionInput
@@ -48,7 +48,7 @@ interface PromptResolutionInput {
   recentMessages: Message[];              // last N full messages for immediate context
 
   // External and system events
-  recentEvents: StructuredEvent[];        // injected events from Event Worker
+  recentEvents: StructuredEvent[];        // injected events from Event Worker / Inngest
 
   // Entity resolution results
   resolvedEntities: ResolvedEntities;     // canonical vehicle/part matches
@@ -59,6 +59,7 @@ interface PromptResolutionInput {
   activeBusinessContext?: any;            // summarized view of current auction, vehicle, inventory situation, etc.
   toolResultsSummary?: string;            // concise summary of recent tool outcomes
   userPreferences?: UserPreferences;      // long-term user style, priorities, constraints
+  inngestWorkflowState?: any;             // optional: active Inngest workflow / pending HITL state
 
   // Metadata for smart decisions
   conversationMetadata: {
@@ -76,7 +77,7 @@ interface PromptResolutionInput {
 ```ts
 interface PromptResolutionResult {
   prompt: string;                         // fully compiled final system prompt
-  tools: Tool[];                          // MCP tools filtered by effective_features
+  tools: Tool[];                          // MCP tools + Skills filtered by effective_features
   metadata: {
     topLevelPromptName: string;
     componentsUsed: string[];
@@ -93,7 +94,7 @@ interface PromptResolutionResult {
 Inside `prompt_resolution`, selection is **composite** rather than based on `focus_state` alone.
 
 - **Primary signal**: `threadContext.focus_state` — maps directly to a top-level Langfuse prompt.
-- **Refinement signals**: `pivot_detected`, `conversationPhase`, `activeBusinessContext`, `resolvedEntities`, `recentEvents`, and `user_plan.effective_features`.
+- **Refinement signals**: `pivot_detected`, `conversationPhase`, `activeBusinessContext`, `resolvedEntities`, `recentEvents`, `user_plan.effective_features`, and `inngestWorkflowState`.
 - **Fallback**: Defaults to `chat-default` if no strong match.
 
 The resolver uses a hybrid decision engine (hard rules + weighted scoring) for robust routing.
@@ -111,6 +112,7 @@ Core variables include:
 - `activeBusinessContext`
 - `toolResultsSummary`
 - `pinnedFacts` and `userPreferences`
+- `inngestWorkflowState` (when relevant)
 
 Variables are injected in an order optimized for prefix caching (stable prefix first, dynamic context later).
 
@@ -125,6 +127,17 @@ Variables are injected in an order optimized for prefix caching (stable prefix f
 
 Detailed rules for computing and applying `effective_features` are covered in the dedicated `effective_features.md` document.
 
+## Skills Integration (LangGraph)
+
+`prompt_resolution` is also responsible for selecting and presenting **Skills** — deterministic, multi-tool capabilities implemented as LangGraph graphs.
+
+**Key Distinction**:
+- The main conversational agent (TS Resolver + `prompt_resolution`) remains custom TypeScript.
+- Complex, deterministic tool orchestration is delegated to **LangGraph Skills**.
+- `prompt_resolution` can present Skills as high-level tools to the LLM, but the actual execution happens inside the LangGraph graph (and may be orchestrated via Inngest when durability or HITL is required).
+
+When a Skill is selected, `prompt_resolution` injects the Skill’s rich docstring and input schema so the LLM understands when and how to invoke it.
+
 ## Observability & Debugging
 
 Every call to `prompt_resolution` is fully observable in Langfuse:
@@ -135,6 +148,7 @@ Every call to `prompt_resolution` is fully observable in Langfuse:
 - Final compiled prompt
 - Selected tools and their dynamic guidance
 - Resolution metadata (which signals influenced the decision)
+- Skill selection (when applicable)
 
 This makes every prompt self-documenting and reproducible.
 
@@ -142,8 +156,7 @@ This makes every prompt self-documenting and reproducible.
 
 - New `focus_state` values can be added by creating new top-level prompts.
 - New reusable components can be introduced without changing existing prompts.
-- `prompt_resolution` can accept additional signals without breaking the interface.
+- `prompt_resolution` can accept additional signals (e.g. Inngest workflow state, Knock response context) without breaking the interface.
 - Langfuse labels (`production`, `staging`, `experiment-v2`) enable safe versioning and A/B testing.
 
 This design supports both rapid iteration on the single-agent system and the future introduction of specialized SME agents.
-

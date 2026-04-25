@@ -1,0 +1,28 @@
+---
+description: Main workflow rule linking Plan Mode and Agent Mode
+---
+
+# Workflow Rules
+
+This file coordinates Plan Mode and Agent Mode behavior. It links to the specific rules for each mode.
+
+## Plan Mode
+
+When the user asks you to create a plan, follow the rules in:
+**`@plan-mode.mdc`**
+
+## Agent Mode
+
+When the user asks you to implement, follow the rules in:
+**`@agent-mode.mdc`**
+
+## Supporting Rules
+
+These rules apply in both modes:
+- Token Efficiency: `@token-efficiency.mdc`
+- Architecture Document Index: `@architecture-links.mdc`
+
+## Quick Reference
+
+For quick access to architecture documents with descriptions, see:
+**`@architecture-links.mdc`**

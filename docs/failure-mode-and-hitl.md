@@ -1,6 +1,6 @@
 # failure-mode-and-hitl.md
-**Version:** April 20, 2026  
-**Status:** Draft (Zoom Level 2)
+**Version:** April 25, 2026  
+**Status:** Updated (Zoom Level 2) — Knock + Inngest + Ably HITL
 
 This document defines how the AI Yard Assistant handles failures, partial information, and Human-In-The-Loop (HITL) scenarios. It ensures the system remains robust, transparent, and safe even when things go wrong.
 
@@ -131,7 +131,7 @@ HITL is used strategically for high-stakes or ambiguous situations.
 > C) Adjust the max bid
 > D) Cancel"
 
-## Asynchronous Communication & Notifications
+## Asynchronous Communication & Notifications (Knock + Inngest + Ably)
 
 Not all important information requires immediate user attention. The system must support **asynchronous, non-blocking communication** for scenarios where the user needs to be informed but does not need to respond right away.
 
@@ -139,72 +139,47 @@ Not all important information requires immediate user attention. The system must
 
 We explicitly categorize HITL interactions into four types:
 
-| Type                              | Blocking? | Delivery Channel                  | Example |
+| Type                              | Blocking? | Primary Delivery                  | Example |
 |-----------------------------------|-----------|-----------------------------------|---------|
 | **Synchronous Blocking**          | Yes       | In-chat (immediate)               | "Should I bid $1,240 now?" |
-| **Asynchronous Blocking**         | Yes       | Notification + in-chat            | Manager approval for large bid |
-| **Asynchronous Non-blocking (Notifications)** | No | Notification (in-app / email / SMS / push) | "Auction for 2019 CR-V starts in 2 hours" |
-| **Long-running Job Completion**   | No        | Notification when ready           | "Your 90-day profitability report is ready" |
+| **Asynchronous Blocking**         | Yes       | Knock (deep link + webhook)       | Manager approval for large bid |
+| **Asynchronous Non-blocking**     | No        | Knock or Ably                     | "Auction for 2019 CR-V starts in 2 hours" |
+| **Long-running Job Completion**   | No        | Knock                             | "Your 90-day profitability report is ready" |
 
-This categorization allows the system to choose the right delivery mechanism and urgency level.
+**Implementation:**
+- Rich, actionable, or multi-channel HITL → **Knock** (with deep links and webhooks)
+- Simple in-app state updates → **Ably**
+- All complex or durable HITL workflows are orchestrated via **Inngest** (durable execution, "wait for event" steps, retries)
 
 ### External System Injections
 
 When an external system (Copart, IAAI, inventory scanner, Stripe, eBay, etc.) injects important information:
 
-- If the user is in an active relevant session (e.g. `auction_bidding_session`) → inject as a system message immediately.
-- If the user is not active or the information is not urgent → queue as an **Asynchronous Non-blocking Notification**.
+- If the user is in an active relevant session → inject as a system message immediately.
+- If the user is not active or the information is not urgent → queue as an **Asynchronous Non-blocking Notification** via Knock or Ably.
 - Use `importance_score` and `labels` to determine urgency and delivery channel.
-
-Example: A sudden high-value auction loss is injected with high `importance_score` → user receives a priority notification even if they are not currently chatting.
 
 ### Budget and Quota Warnings
 
-When a user approaches or hits a budget/quota limit (token quota, bidding budget, daily alert limit):
+When a user approaches or hits a budget/quota limit:
 
 - Show warning in current chat if active.
-- Send **Asynchronous Non-blocking Notification** if user is offline or in another session.
-- Optionally pause proactive features (e.g. `proactive_bidding`, `auction_alerts`) until budget is increased.
-- Store warning in `structured_memory` so it surfaces on next relevant interaction.
+- Send **Asynchronous Non-blocking Notification** via Knock or Ably if user is offline.
+- Optionally pause proactive features until budget is increased.
+- Store warning in `structured_memory`.
 
 ### Long-Running Job Notifications
 
 For operations that take time (report generation, bulk valuation, large data export):
 
-1. Acknowledge immediately in-chat: "I'll generate that report in the background. You can keep working — I'll notify you when it's ready."
-2. Kick off background job (tracked in a `background_jobs` table).
-3. When complete → send **Long-running Job Completion** notification.
+1. Acknowledge immediately in-chat.
+2. Kick off background job as an **Inngest** workflow.
+3. When complete → send **Long-running Job Completion** notification via Knock.
 4. Store the result in `structured_memory` or as a retrievable artifact.
-
-This allows the user to continue working on other tasks while the system handles heavy computation.
-
-### Informational / "News" Updates
-
-Some information is useful but not urgent (e.g. "A new 2020 Honda CR-V just arrived in your yard", "Market price for transmissions dropped 8% today").
-
-- Delivered as **Asynchronous Non-blocking Notifications**.
-- User can configure notification preferences (in-app badge only, email summary, SMS for high-priority only, etc.).
-- Stored in `structured_memory` with `labels: ["informational", "news"]` so it can be surfaced contextually later.
 
 ### User Notification Preferences
 
-Users can configure how they receive different types of notifications:
-
-- **In-app** (badge + notification center)
-- **Email** (immediate or daily digest)
-- **SMS** (high-priority only)
-- **Push** (mobile app)
-
-Preferences are stored in `user_plans` or `structured_memory` and respected by the notification system.
-
-### Integration with the Rest of the System
-
-- The **Event Worker** triggers notifications when external systems inject high-importance data.
-- The **Post-Response Handler** can queue background jobs and schedule completion notifications.
-- `ThreadContext` can include a `pending_notifications` array for the current session.
-- All notifications are logged in Langfuse with `contextId` for full traceability.
-
-This design ensures the agent can be proactive and helpful without interrupting the user's workflow unnecessarily.
+Users can configure how they receive different types of notifications (in-app, email, SMS, push). These preferences are respected by the **NotificationService** when deciding routing.
 
 ## Failure Handling Philosophy: Hard vs Soft Failures
 
@@ -218,13 +193,13 @@ Not all failures are equal. The system distinguishes between two fundamental typ
 - External system outage (Copart API down, Stripe unavailable, eBay rate limit exceeded)
 - Database or cache unavailability
 - Authentication / permission system failure
-- Model provider outage (xAI / OpenAI / Anthropic unavailable)
+- Model provider outage
 - Network partition between services
 
 **Handling Strategy:**
 - **Do not retry endlessly** — implement circuit breaker pattern.
 - **Graceful degradation** — switch to read-only mode or cached data where possible.
-- **Clear user communication** — "Copart is currently experiencing issues. I can use cached auction data from 20 minutes ago or wait until the service recovers."
+- **Clear user communication**
 - **Asynchronous notification** to operations team (if critical).
 - **Log as hard failure** with full context for post-mortem.
 
@@ -235,17 +210,17 @@ Not all failures are equal. The system distinguishes between two fundamental typ
 **Definition:** A failure where resolution **is possible** because we know how to recover — usually through HITL, retry, fallback, or clarification.
 
 **Characteristics:**
-- Entity resolution ambiguity (name → canonical ID fails)
-- Tool input validation error (user gave bad parameters)
+- Entity resolution ambiguity
+- Tool input validation error
 - Low confidence model output
 - Stale but usable data
 - Partial tool results
 
 **Handling Strategy:**
-- **Attempt recovery automatically** when safe (retry, fallback to cache, use secondary tool).
-- **Use HITL** when user input is required (clarification, approval, correction).
-- **Be transparent** — explain what went wrong and what we're doing to fix it.
-- **Log as soft failure** so we can measure and improve resolution success rate over time.
+- **Attempt recovery automatically** when safe.
+- **Use HITL** when user input is required.
+- **Be transparent**
+- **Log as soft failure**
 
 **Goal:** Resolve the issue with minimal user friction and continue the workflow.
 
@@ -260,26 +235,11 @@ Not all failures are equal. The system distinguishes between two fundamental typ
 | Example                   | Copart API completely down            | "Which Honda did you mean?"               |
 | System state              | Impaired mode                         | Normal operation with extra step          |
 
-### Why This Distinction Matters
-
-- It prevents the system from wasting time retrying unrecoverable errors.
-- It ensures we use HITL only when it adds value (soft failures), not for hard outages.
-- It gives us clear metrics: "What % of failures are soft and resolvable?" vs "What % are hard and require infrastructure fixes?"
-- It makes the agent feel intelligent — it knows when to ask for help vs when to simply inform the user.
-
-This philosophy guides every failure handling decision in the system.
-
 ## Quota & Budget Exhaustion — Special Handling
 
 Running out of tokens or hitting a bidding budget is **not** treated as a failure (hard or soft). It is a **Quota Exhausted** state — a predictable business limit that has been reached.
 
-### Why This Is Different
-
-- It is fully predictable (we know the exact threshold).
-- It is immediately recoverable (purchase more, upgrade, or wait for reset).
-- Framing it as a "failure" makes the agent sound broken. Instead, it should feel like a helpful business moment.
-
-### Handling Strategy
+**Handling Strategy:**
 
 1. **Pre-Call Enforcement** (in Request Flow)
    - Check `token_monthly_remaining` or bidding budget from `user_plan`.
@@ -303,87 +263,47 @@ Running out of tokens or hitting a bidding budget is **not** treated as a failur
 > 
 > What would you like to do?
 
-### Integration Points
-
-- **Request Flow** — Pre-call hook performs the check and short-circuits.
-- **effective_features.md** — `usage_quotas` feature controls whether quotas are enforced.
-- **user_plans** table — Stores `token_monthly_remaining`, bidding budget, etc.
-- **Observability** — Log as "Quota Exceeded" (not a failure) for clean metrics.
-
-This approach turns a potential point of friction into a clear, low-friction upgrade opportunity while keeping the agent feeling helpful and professional.
-
 ## Observability & Learning from Failures
 
 Every failure (hard or soft) and every HITL interaction is fully observable and used to improve the system over time.
 
-### What Gets Logged
-
-For every failure or HITL event, we log:
-
-- `failure_category` (Entity Resolution, Tool Execution, Quota Exceeded, etc.)
-- `failure_type` (hard / soft / quota_exceeded)
-- `confidence_score` (if applicable)
-- `contextId`
-- `user_id`
-- `yard_id`
-- `focus_state` at time of failure
+**What Gets Logged:**
+- `failure_category`, `failure_type` (hard / soft / quota_exhausted)
+- `confidence_score`, `contextId`, `user_id`, `yard_id`, `focus_state`
 - Full error details or user response
-- Resolution outcome (resolved via HITL, auto-retried, escalated, etc.)
-- Time to resolution
+- Resolution outcome
+- Linked Inngest trace ID and Knock delivery status
+- Ably connection and message events
 
-All events are sent to Langfuse with `contextId` as the session identifier for full traceability.
+All events are sent to Langfuse with `contextId` for full traceability.
 
-### Metrics We Track
-
-- **Soft Failure Resolution Rate** — % of soft failures successfully resolved via HITL or retry
-- **Hard Failure Frequency** — by category and external system
-- **HITL Acceptance Rate** — how often users approve vs reject vs modify proposals
-- **Quota Exhaustion Conversion Rate** — % of users who upgrade or buy more after hitting limit
-- **Time to Resolution** — average time from failure to successful continuation
-- **Clarification Success Rate** — % of entity resolution clarifications that lead to correct canonical ID
-
-### Continuous Improvement Loop
-
-1. **Weekly Review** — Operations team reviews top failure patterns.
-2. **Model Improvement** — Low-confidence entity resolution cases are used to fine-tune the resolver.
-3. **Prompt Tuning** — Recurring clarification patterns are turned into better prompt guidance.
-4. **Feature Gating** — If a feature causes too many failures, it can be temporarily disabled via `effective_features`.
-5. **SME Agent Training** — Future specialized agents inherit failure patterns and handling strategies from this system.
-
-This turns every failure into a learning opportunity rather than just a support ticket.
+**Metrics We Track:**
+- Soft Failure Resolution Rate
+- Hard Failure Frequency
+- HITL Acceptance Rate
+- Quota Exhaustion Conversion Rate
+- Time to Resolution
 
 ## Extensibility
 
 The failure handling and HITL system is designed to evolve with the product and support future multi-agent decomposition.
 
-### Adding New Failure Types
+**Adding New Failure Types:**
+- Add to the Comprehensive Failure Mode Catalog
+- Define Hard or Soft
+- Specify handling strategy
+- Update logging and metrics
 
-To add a new failure type:
+**Adding New HITL Triggers:**
+- Define the condition
+- Assign to one of the four categories
+- Configure delivery channel (primarily Knock + Ably)
+- Update prompt guidance
 
-1. Add it to the **Comprehensive Failure Mode Catalog** with a clear definition.
-2. Define whether it is **Hard** or **Soft**.
-3. Specify the handling strategy (retry, HITL, graceful degradation, notification, etc.).
-4. Add the new `failure_category` value to logging.
-5. Update metrics dashboards.
-
-No core code changes are required for most new failure types — the system is configuration-driven.
-
-### Adding New HITL Triggers
-
-New HITL triggers can be added by:
-
-- Defining the condition (e.g. "bidding amount > $5,000" or "new high-value part detected").
-- Assigning it to one of the four HITL categories (Synchronous Blocking, Asynchronous Blocking, Asynchronous Non-blocking, Long-running Job Completion).
-- Configuring the delivery channel and user notification preferences.
-- Updating the relevant prompt guidance.
-
-### Future Evolution
-
-As the system evolves toward SME agents and more autonomous behavior, the following extensions are planned:
-
-- **Agent-specific failure profiles** — Each SME agent (Auction Intelligence, Inventory, Valuation) can have its own failure handling rules and HITL thresholds.
-- **Cross-agent HITL** — One agent can escalate to another agent or to a human for complex decisions.
-- **Predictive HITL** — Use historical patterns to proactively ask for clarification before a likely failure occurs.
-- **Self-healing failures** — For certain soft failures, the system can automatically apply learned corrections without user intervention.
+**Future Evolution:**
+- Agent-specific failure profiles
+- Cross-agent HITL
+- Predictive HITL
+- Self-healing failures
 
 The foundation built in this document supports all of these future capabilities without requiring a redesign.

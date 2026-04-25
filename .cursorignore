@@ -10,3 +10,5 @@ data/**
 **/todo-app
 
 **/traces
+**/prompts
+*/.DS_Store

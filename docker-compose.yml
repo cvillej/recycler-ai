@@ -1,0 +1,226 @@
+version: '3.8'
+
+# =============================================================================
+# AI Yard Assistant — Complete Local Docker Stack
+# =============================================================================
+#
+# Services:
+#   - Inngest (background jobs + HITL)
+#   - Ably Local (realtime)
+#   - Langfuse v3 (observability) with ClickHouse + Redis + MinIO
+#   - Dozzle (unified log viewer)
+#
+# Supabase is managed separately via `supabase start` (recommended).
+# =============================================================================
+
+services:
+
+  # ============================================
+  # INNGEST — Background Jobs & HITL
+  # ============================================
+  inngest:
+    image: inngest/inngest:latest
+    container_name: inngest
+    ports:
+      - "8288:8288"
+    environment:
+      - INNGEST_DEV=true
+      - INNGEST_LOG_LEVEL=info
+    volumes:
+      - inngest-data:/var/lib/inngest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8288/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # ABLY LOCAL — Realtime Development Server
+  # ============================================
+  ably-local:
+    image: ably/ably-local:latest
+    container_name: ably-local
+    ports:
+      - "8080:8080"
+    environment:
+      - ABLY_LOCAL_LOG_LEVEL=info
+    restart: unless-stopped
+
+  # ============================================
+  # DOZZLE — Unified Docker Log Viewer
+  # ============================================
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    ports:
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_TAILSIZE=300
+      - DOZZLE_FILTER="container=~^(inngest|ably-local|langfuse-web|langfuse-worker|clickhouse|redis|minio)$"
+    restart: unless-stopped
+
+  # ============================================
+  # LANGFUSE v3 — Observability (Full Stack)
+  # ============================================
+
+  # Langfuse Worker
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3
+    restart: always
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *langfuse-env
+
+  # Langfuse Web UI + API
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *langfuse-env
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-changeme-super-secret-32-chars-minimum}
+
+      # Headless initialization (optional but useful)
+      LANGFUSE_INIT_ORG_ID: salvagebid-ai
+      LANGFUSE_INIT_ORG_NAME: SalvageBid AI
+      LANGFUSE_INIT_PROJECT_ID: production
+      LANGFUSE_INIT_PROJECT_NAME: production
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-pk-lf-local}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-sk-lf-local}
+      LANGFUSE_INIT_USER_EMAIL: admin@salvagebid.local
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-ChangeMe123!}
+      LANGFUSE_INIT_USER_NAME: Admin
+
+  # ClickHouse — Trace storage
+  clickhouse:
+    image: docker.io/clickhouse/clickhouse-server
+    restart: always
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Redis — Queue between web and worker
+  redis:
+    image: docker.io/redis:7
+    restart: always
+    command: >
+      --requirepass ${REDIS_PASSWORD:-langfuse-redis-secret}
+      --maxmemory-policy noeviction
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-langfuse-redis-secret}", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+
+  # MinIO — Local S3-compatible storage (no AWS needed)
+  minio:
+    image: docker.io/minio/minio
+    restart: always
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret}
+    ports:
+      - "127.0.0.1:9090:9000"
+      - "127.0.0.1:9091:9001"
+    volumes:
+      - ./traces/langfuse-minio:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+# ============================================
+# Shared Environment Variables for Langfuse
+# ============================================
+x-langfuse-env: &langfuse-env
+  NEXT_TELEMETRY_DISABLED: "1"
+  NODE_ENV: production
+  TELEMETRY_ENABLED: "false"
+  LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+
+  # External Homebrew Postgres (macOS)
+  DATABASE_URL: postgresql://langfuse:langfuse@host.docker.internal:5432/langfuse
+
+  NEXTAUTH_URL: http://localhost:3000
+  SALT: ${LANGFUSE_SALT:-changeme-salt}
+  ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:-9f4774bb44f9fcab66c3674c0af47006db55a63d2dae4afa06eabcc004c57ac5}
+
+  # ClickHouse
+  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: clickhouse
+  CLICKHOUSE_PASSWORD: clickhouse
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+
+  # Redis
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_AUTH: ${REDIS_PASSWORD:-langfuse-redis-secret}
+
+  # MinIO (local S3)
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+  LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-miniosecret}
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: us-east-1
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+  LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-miniosecret}
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://localhost:9090
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+
+  LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  inngest-data:
+  langfuse_clickhouse_data:
+  langfuse_clickhouse_logs:
+  langfuse_redis_data:

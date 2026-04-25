@@ -1,6 +1,6 @@
 # memory-management.md
-**Version:** April 20, 2026  
-**Status:** Draft (Zoom Level 2)
+**Version:** April 25, 2026  
+**Status:** Updated (Zoom Level 2) — Supabase + Inngest + Knock
 
 This document defines the complete, production-grade memory management system for the AI Yard Assistant. It covers how the system stores, summarizes, recalls, consolidates, and prunes memory across user interactions and external system events.
 
@@ -28,7 +28,7 @@ A concise, natural-language summary of older conversation history. It lives in t
 A rich JSONB object (`raw_context.structured_memory`) containing extractable facts, resolved entities, user preferences, open questions, external events, and pinned items. Used by tools, resolvers, and future agents.
 
 ### Full Raw History
-Complete, immutable record of every message and event stored in `conversation_messages` (Postgres).
+Complete, immutable record of every message and event stored in `conversation_messages` (Supabase Postgres).
 
 ### Checkpoints
 Full, restorable snapshots of the agent’s state at meaningful points (pivots, major decisions, tool calls, user approvals). Enables time-travel, branching, and debugging.
@@ -46,7 +46,10 @@ This metadata drives summarization, recall, pruning, and checkpoint decisions.
 
 Memory is stored in multiple places with clear responsibilities and different access patterns.
 
-### Primary Storage (Postgres)
+### Primary Storage: Supabase Postgres + pgvector
+
+**Primary Database**: Supabase Postgres (with `pgvector` enabled)
+
 - **`conversation_messages`** — Full, permanent history of every message and event.
 - **`thread_context`** table:
   - `memory_summary` (TEXT)
@@ -54,12 +57,22 @@ Memory is stored in multiple places with clear responsibilities and different ac
   - `user_plan`, `focus_state`, `pivot_detected`, etc.
 - **`checkpoints`** table — Restorable snapshots.
 
+**Why pgvector?**
+- Excellent developer experience and operational simplicity (everything in one database)
+- Strong hybrid search capabilities when combined with `pg_trgm` and full-text search
+- Sufficient performance for Phase 0 data volumes (inventory, market data, conversation memory)
+- Atomic transactions with relational data (very powerful for entity resolution)
+
+**OpenSearch** remains available as an optional future layer for very large scale or advanced semantic workloads.
+
 ### Hot Cache (Redis)
 - `thread_context:{contextId}` — Full current `ThreadContext` (including `memory_summary` and `structured_memory`).
 - Short TTL with explicit invalidation by writers.
 
-### Semantic Recall (OpenSearch)
-- Vector indexes (`salvage_agent_responses`, `salvage_sales_vectors`, `salvage_auctions_vectors`, etc.) for semantic search and RAG-style recall.
+### Semantic Recall (pgvector Primary)
+- Primary vector search uses `pgvector` inside Supabase Postgres.
+- Hybrid lexical + semantic search is achieved via `pgvector` + `pg_trgm` + Postgres full-text capabilities.
+- OpenSearch can be added later as a secondary store if needed for scale or advanced features.
 
 ### Metadata Everywhere
 Every memory item (in `structured_memory`, events, and vector documents) carries rich provenance metadata.
@@ -69,7 +82,7 @@ Every memory item (in `structured_memory`, events, and vector documents) carries
 The system uses an **intelligent, multi-stage summarization pipeline** to keep `memory_summary` concise and useful.
 
 ### Primary Trigger (Token-based)
-After each assistant response, if the estimated token count of the conversation history exceeds 65% of the target model’s context window, an **asynchronous summarization job** is queued.
+After each assistant response, if the estimated token count of the conversation history exceeds 65% of the target model’s context window, an **asynchronous summarization job** is queued (often via Inngest).
 
 ### Secondary Triggers
 - Major change in `focus_state` or `pivot_detected`
@@ -115,7 +128,7 @@ Compaction (also called memory consolidation or "dreaming") reorganizes, dedupli
 4. **Reorganization & Compression**
 5. **Validation & Persistence**
 
-Compaction runs asynchronously and respects all rich metadata.
+Compaction runs asynchronously (typically via Inngest) and respects all rich metadata.
 
 ## Forgetting and Decay Mechanisms
 
@@ -132,17 +145,19 @@ Every memory item carries rich metadata that drives decay decisions:
 - `transient` or low `importance_score` → Decay faster.
 
 ### Pruning & Archiving
-Low-importance items are compressed or removed from active memory. Very old, low-relevance items may be archived to OpenSearch vector indexes.
+Low-importance items are compressed or removed from active memory. Very old, low-relevance items may be archived to vector indexes (pgvector primary, OpenSearch optional).
 
 ## Integration Points
 
 Memory Management integrates with every major layer:
-- **Data Layer**: Primary storage (`thread_context`, `conversation_messages`, `checkpoints`).
-- **External Event Controller**: Event Worker injects structured events with rich metadata.
+
+- **Data Layer**: Primary storage is Supabase Postgres + pgvector (`thread_context`, `conversation_messages`, `checkpoints`).
+- **External Event Controller / Inngest**: Event Worker and Inngest functions inject structured events with rich metadata. Background summarization, compaction, and decay jobs run as Inngest workflows.
 - **Request Flow & TS Resolver**: `prompt_resolution` receives memory signals; post-response handler triggers summarization, compaction, and checkpointing.
 - **Prompt Management**: `memory_summary` and `structured_memory` are injected as variables.
 - **Tool Layer**: Tools read from `structured_memory`; tool results are added with rich metadata.
-- **Observability**: All memory operations are fully traced in Langfuse.
+- **Notification Strategy (Knock)**: Notification events and HITL outcomes are stored in memory with rich metadata and labels.
+- **Observability (Langfuse)**: All memory operations are fully traced in Langfuse.
 
 ## Extensibility & Future Evolution
 
@@ -156,11 +171,12 @@ Memory Management is designed to scale to multi-agent SME decomposition.
 
 **Future Evolution**:
 - Cross-conversation / User-level memory
-- Memory consolidation / "Dreaming" jobs
+- Memory consolidation / "Dreaming" jobs (via Inngest)
 - Explicit memory layering (episodic, semantic, procedural, strategic)
 - Advanced forgetting / decay using semantic similarity and user-defined policies
 - Memory sharing across SME agents
+- Optional OpenSearch layer for very large scale or advanced semantic workloads
 
 ## Summary
 
-Memory Management in the AI Yard Assistant is a complete, production-grade system that treats user messages and external system events as first-class citizens, maintains rich metadata and labels, uses intelligent multi-stage summarization and compaction, supports checkpointing, and provides forgetting/decay mechanisms. It is deeply integrated with every layer and designed for long-term scalability and robustness.
+Memory Management in the AI Yard Assistant is a complete, production-grade system that treats user messages and external system events as first-class citizens, maintains rich metadata and labels, uses intelligent multi-stage summarization and compaction, supports checkpointing, and provides forgetting/decay mechanisms. It is deeply integrated with every layer (Supabase, Inngest, Knock, Langfuse) and designed for long-term scalability and robustness.

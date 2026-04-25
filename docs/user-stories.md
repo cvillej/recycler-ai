@@ -1,7 +1,6 @@
-
 # user-stories.md
-**Version:** April 20, 2026  
-**Status:** Updated (Zoom Level 1)
+**Version:** April 25, 2026  
+**Status:** Updated (Zoom Level 1) — Phase 0 Scope Applied
 
 As the Product Owner of the AI Yard Assistant, I am building a tool that becomes indispensable to salvage yard owners, operators, yard workers, and managers by saving them time, reducing risk at auction, and increasing profitability in a very tough, low-margin business.
 
@@ -16,6 +15,8 @@ Our customers run small-to-medium salvage yards. They buy at auction, part out v
 
 They will only adopt and pay for a tool that delivers **clear, immediate ROI**.
 
+**Phase 0 Focus:** Inventory intelligence, valuation, profitability analysis, aging inventory detection, and proactive notifications. Photo intake and live external auction integrations are deferred.
+
 ## Core User Stories
 
 ### As a Salvage Yard Owner/Operator, I want to...
@@ -23,12 +24,10 @@ They will only adopt and pay for a tool that delivers **clear, immediate ROI**.
 - Get **proactive, high-confidence bidding recommendations** at auction that factor in my current inventory, cash on hand, recent sales, storage constraints, and my personal risk tolerance.
 - Receive a **rich notification widget** or push notification the moment a high-value part or vehicle I should bid on appears — even if I’m not actively using the app.
 - When I lose an auction (e.g. eBay or Copart), immediately see a widget with actionable options: “Increase today’s bidding limit by 2”, “Find 3 similar parts already in my yard”, “Set alert for next matching lot”.
-- Take a photo of any part on my phone and instantly get an AI valuation, condition grade, and suggested selling price based on current market comps.
 - Open the app at any time and see a clear dashboard of aging inventory with specific, prioritized actions (“Drop price on these 14 transmissions by 15%”, “Bundle these 6 fenders”).
 
 ### As a Yard Worker, I want to...
 
-- Walk up to a newly arrived vehicle, take 2–3 photos, and have the AI automatically create the inventory record with make, model, year, condition notes, and suggested part values.
 - Use voice commands while driving a forklift or walking the yard to log parts without stopping (“Log 4 doors from the blue CR-V, good condition”).
 - Ask the app “Where is the transmission from the 2019 Honda?” and see an AR arrow or map highlight showing the exact location.
 
@@ -78,4 +77,3 @@ They will only adopt and pay for a tool that delivers **clear, immediate ROI**.
 - Positive feedback on how the app handles feature limits and external notifications
 
 This product will succeed by becoming the AI partner that helps salvage yards buy smarter, sell faster, and waste less — while making the decision to pay for it feel obvious and low-risk.
-

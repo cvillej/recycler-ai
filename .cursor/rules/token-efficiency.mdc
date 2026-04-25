@@ -1,0 +1,26 @@
+---
+description: Rules for token-efficient work with Cursor
+---
+
+# Token Efficiency Rules
+
+## Core Principles
+
+- Be token efficient, but **never sacrifice correctness, maintainability, or clarity** for token savings.
+- Prefer small, targeted changes over large rewrites.
+- Always use Cursor's **"Apply"** feature for code changes instead of full regeneration when possible.
+
+## Best Practices
+
+- Make the smallest possible change that solves the problem correctly.
+- Reuse existing code patterns instead of writing new code from scratch.
+- Only load full architecture documents when absolutely necessary for the current task.
+- When editing code, prefer editing small sections over rewriting entire files.
+- Use focused prompts — be specific about what you need.
+
+## Anti-Patterns to Avoid
+
+- Do not regenerate large portions of code when a small diff would work.
+- Do not load full architecture documents into context "just in case".
+- Do not over-explain or add unnecessary comments for token savings.
+- Do not sacrifice code quality to save a few tokens — it usually costs more tokens later.

@@ -19,3 +19,5 @@ venv/
 **/backup
 **/notes
 **/traces
+
+**/.DS_Store

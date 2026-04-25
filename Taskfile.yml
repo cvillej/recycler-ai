@@ -1,42 +1,76 @@
 version: '3'
 
+# =====================================================
+# Docker & Supporting Services Tasks
+# =====================================================
+
 tasks:
-  default:
+  up:
+    desc: Start all Docker services (Inngest, Ably Local, Langfuse, Redis)
     cmds:
-      - task: todo:status
+      - docker compose up -d
+    silent: false
 
-  todo:dev:
-    desc: Start the isolated Todo App (Vite UI + Hono API)
+  down:
+    desc: Stop all Docker services
     cmds:
-      - task: todo:stop
-      - cd todo-app && npm run dev:full
+      - docker compose down
+    silent: false
 
-  todo:stop:
-    desc: Stop all Todo App processes
+  restart:
+    desc: Restart all Docker services
     cmds:
-      - pkill -f "vite|dev:full|dev:api|server.ts|3001|5174" || true
-      - echo "Stopped Todo App processes"
+      - docker compose down
+      - docker compose up -d
 
-  todo:restart:
-    desc: Restart the Todo App
+  logs:
+    desc: Show logs from all Docker services
     cmds:
-      - task: todo:stop
-      - sleep 2
-      - task: todo:dev
+      - docker compose logs -f
 
-  todo:build:
-    desc: Build the Todo App
-    dir: todo-app
+  logs:errors:
+    desc: Show only ERROR and WARN logs (best for LLM analysis)
     cmds:
-      - npm run build
+      - docker compose logs --tail=200 -f | grep -E "(ERROR|WARN|error|warn)"
 
-  todo:status:
-    desc: Show status
+  status:
+    desc: Check status of all Docker services
     cmds:
-      - ./scripts/todo-status.sh
+      - docker compose ps
 
-  todo:clean:
-    desc: Clean build
+  clean:
+    desc: Stop services and remove volumes (use with caution)
     cmds:
-      - rm -rf todo-app/dist
-      - echo "Cleaned"
+      - docker compose down -v
+    silent: false
+
+  # Individual service commands
+  up:inngest:
+    desc: Start only Inngest
+    cmds:
+      - docker compose up -d inngest
+
+  up:ably:
+    desc: Start only Ably Local
+    cmds:
+      - docker compose up -d ably-local
+
+  up:langfuse:
+    desc: Start only Langfuse
+    cmds:
+      - docker compose up -d langfuse-web langfuse-worker
+
+  logs:inngest:
+    desc: Show Inngest logs
+    cmds:
+      - docker compose logs -f inngest
+
+  logs:ably:
+    desc: Show Ably Local logs
+    cmds:
+      - docker compose logs -f ably-local
+
+  logs:langfuse:
+    desc: Show Langfuse logs
+    cmds:
+      - docker compose logs -f langfuse-web

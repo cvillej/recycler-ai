@@ -1,0 +1,28 @@
+---
+description: Central index of all architecture documents
+---
+
+# Architecture Document Index
+
+Use these links when you need to reference specific parts of the architecture:
+
+**Core System:**
+- Request Flow: `@../../docs/request-flow.md`
+- Tool Layer & Skills: `@../../docs/tool-layer.md`
+- Memory Management: `@../../docs/memory-management.md`
+- Prompt Management: `@../../docs/prompt-management.md`
+
+**Infrastructure & Background:**
+- External Event Controller: `@../../docs/external-event-controller.md`
+- External System Integration: `@../../docs/external-system-integration.md`
+- Development Environment: `@../../docs/development-env.md`
+
+**Observability & Quality:**
+- Observability: `@../../docs/observability.md`
+- Failure Mode & HITL: `@../../docs/failure-mode-and-hitl.md`
+
+**Product & Planning:**
+- User Stories: `@../../docs/user-stories.md`
+- Development Steps: `@../../docs/dev-steps.md`
+
+**Note:** Only load the full content of these documents when the current task requires deep understanding of that specific area.

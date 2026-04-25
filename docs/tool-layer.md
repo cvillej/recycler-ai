@@ -1,6 +1,6 @@
 # tool-layer.md
-**Version:** April 20, 2026  
-**Status:** Draft (Zoom Level 2)
+**Version:** April 25, 2026  
+**Status:** Updated (Zoom Level 2) — LangGraph for Skills only
 
 This document defines the Tool Layer — how tools are defined, discovered, selected, and presented to the LLM in the AI Yard Assistant.
 
@@ -154,6 +154,8 @@ A **Skill** is a named, versioned, reusable capability that packages:
 - Deterministic behavior (same inputs → same outputs)
 - Optional built-in HITL gates or clarification steps
 
+**Important Distinction**: Skills are implemented as deterministic graphs using **LangGraph**. The main conversational agent (TS Resolver + `prompt_resolution`) remains custom TypeScript code. LangGraph is used **only** for Skills.
+
 Skills sit between **atomic tools** (single API calls) and **full agent workflows**. They provide the **deterministic layer** while still allowing the LLM to decide *when* to invoke them.
 
 ### Why Skills Matter
@@ -181,8 +183,8 @@ Example Skills we will define:
 
 - `ResolvePartAndUpdateLocation` — Resolves ambiguous part name → canonical ID (with HITL gate) → updates inventory location.
 - `GenerateFullValuationReport` — Runs market comp search + margin analysis + generates formatted report.
-- `ExecuteBiddingSessionWithBudgetCheck` — Monitors active auction, checks budget, places bids within policy, handles outbid scenarios.
-- `SmartInventoryIntake` — Photo → AI identification → entity resolution → create/update part record with location.
+- `ExecuteBiddingSessionWithBudgetCheck` — Monitors active auction, checks budget, places bids within policy, handles outbid scenarios (can involve Inngest + Knock HITL).
+- `SmartInventoryIntake` — AI identification + entity resolution + create/update part record (photo intake portion deferred in Phase 0).
 
 The LLM still has full agency to decide *which* Skill to invoke and *when*, but once invoked, the Skill executes deterministically.
 
@@ -190,8 +192,9 @@ The LLM still has full agency to decide *which* Skill to invoke and *when*, but 
 
 - **Tool Layer** — Skills are registered alongside atomic tools and filtered by `effective_features`.
 - **effective_features.md** — Individual Skills can be enabled/disabled per user/plan/yard.
-- **HITL** — Skills can embed mandatory clarification gates (especially for canonical ID requirements).
-- **Observability** — Every Skill invocation creates a dedicated trace with full input/output and decision reasoning.
+- **HITL** — Skills can embed mandatory clarification gates (especially for canonical ID requirements) and can trigger or resume via Knock notifications.
+- **Inngest** — Some Skills (especially those involving long-running work or HITL) are orchestrated as Inngest workflows for durability and replayability.
+- **Observability** — Every Skill invocation creates a dedicated trace (LangGraph + Inngest) with full input/output and decision reasoning.
 - **Memory Management** — Skill results are stored in `structured_memory` with rich metadata.
 
 ### Extensibility
@@ -199,7 +202,7 @@ The LLM still has full agency to decide *which* Skill to invoke and *when*, but 
 Adding a new Skill is straightforward:
 
 1. Define the Skill in the central Skills Registry (name, version, input/output schema, internal tool sequence, applicability conditions).
-2. Implement the Skill as a deterministic function (or graph in LangGraph style).
+2. Implement the Skill as a deterministic LangGraph graph (or Inngest workflow when appropriate).
 3. Register it in the Tool Layer so it appears in `prompt_resolution` when appropriate.
 4. Optionally expose it via MCP for external systems.
 
