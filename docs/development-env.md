@@ -14,6 +14,7 @@ The development environment must enable:
 - A clean, shared todo system that both you and AI coding agents can read and update efficiently
 
 ## Recommended Tech Stack
+Use fnm (fast Node manager) + Corepack + pnpm
 
 | Category                  | Technology                              | Notes |
 |---------------------------|-----------------------------------------|-------|
