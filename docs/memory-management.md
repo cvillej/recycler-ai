@@ -1,8 +1,8 @@
 # memory-management.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Supabase + Inngest + Knock
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Mem0 + 3-Level Focus + Langfuse Observability
 
-This document defines the complete, production-grade memory management system for the AI Yard Assistant. It covers how the system stores, summarizes, recalls, consolidates, and prunes memory across user interactions and external system events.
+This document defines the memory management system for the AI Yard Assistant. It covers how the system maintains coherent, relevant, and efficient context using Mem0 as the primary memory engine, with support for 3-level hierarchical focus and workflow-specific state.
 
 ## Purpose of Memory Management
 
@@ -12,26 +12,34 @@ Core responsibilities:
 - Persist full raw history indefinitely for audit, debugging, and long-term recall
 - Maintain high-quality, compact active memory (`memory_summary` and `structured_memory`) for prompt injection and reasoning
 - Support rich metadata, labeling, importance scoring, and provenance for every memory item
-- Execute intelligent, multi-stage summarization and consolidation
-- Support checkpointing, branching, and time-travel debugging
-- Enable forgetting/decay mechanisms that respect importance and relevance
 - Provide structured memory layers for tools, entity resolution, and future SME agents
 
 Memory includes **both user-driven conversation and external system events** as first-class citizens.
 
 ## Core Concepts
 
+### 3-Level Hierarchical Focus
+The system maintains three levels of focus for drift detection and context management:
+- `overarching_focus` — The big-picture goal (changes rarely)
+- `task_specific_focus` — The current major task
+- `subtask_focus` — The immediate action or sub-task
+
+Focus changes are tracked and can trigger memory actions.
+
 ### memory_summary (Primary Active Memory)
-A concise, natural-language summary of older conversation history. It lives in the `thread_context` table and is the primary view injected into prompts.
+A concise, natural-language summary of older conversation history. It is the primary view injected into prompts and is managed through Mem0.
 
 ### structured_memory (Structured & Queryable Memory)
-A rich JSONB object (`raw_context.structured_memory`) containing extractable facts, resolved entities, user preferences, open questions, external events, and pinned items. Used by tools, resolvers, and future agents.
+A rich JSONB object managed by Mem0 containing:
+- Extractable facts and entities
+- User preferences and pinned items
+- Workflow-specific state (e.g., `ebay_listing`, `auction_pivot`)
+- 3-level focus history
+
+Used by `prompt_resolution`, tools, and Skills.
 
 ### Full Raw History
 Complete, immutable record of every message and event stored in `conversation_messages` (Supabase Postgres).
-
-### Checkpoints
-Full, restorable snapshots of the agent’s state at meaningful points (pivots, major decisions, tool calls, user approvals). Enables time-travel, branching, and debugging.
 
 ### Rich Metadata & Labels (First-Class)
 Every memory item carries comprehensive metadata:
@@ -40,22 +48,34 @@ Every memory item carries comprehensive metadata:
 - `importance_score` (0.0–1.0)
 - `reason`, `timestamp`, `context_at_creation`, `pinned`
 
-This metadata drives summarization, recall, pruning, and checkpoint decisions.
+This metadata drives summarization, recall, and pruning decisions.
 
 ## Storage Strategy
 
-Memory is stored in multiple places with clear responsibilities and different access patterns.
+Memory is managed primarily through **Mem0**, with Supabase providing supporting storage.
 
-### Primary Storage: Supabase Postgres + pgvector
+### Primary Memory Engine: Mem0
+Mem0 is the primary engine for:
+- `structured_memory` (including workflow-specific namespaces)
+- 3-level hierarchical focus management
+- Long-term recall and relevance-based retrieval
+- Memory summarization operations
 
-**Primary Database**: Supabase Postgres (with `pgvector` enabled)
+### Supporting Storage: Supabase Postgres + pgvector
+- Full raw conversation history (`conversation_messages`)
+- `thread_context` hot cache (including `memory_summary`)
+- Business domain data (via thin API layer)
+
+**Why pgvector?**
+- Excellent developer experience and operational simplicity
+- Strong hybrid search for entity resolution
+- Atomic transactions with relational data
 
 - **`conversation_messages`** — Full, permanent history of every message and event.
 - **`thread_context`** table:
   - `memory_summary` (TEXT)
   - `raw_context.structured_memory` (JSONB)
   - `user_plan`, `focus_state`, `pivot_detected`, etc.
-- **`checkpoints`** table — Restorable snapshots.
 
 **Why pgvector?**
 - Excellent developer experience and operational simplicity (everything in one database)
@@ -77,28 +97,17 @@ Memory is stored in multiple places with clear responsibilities and different ac
 ### Metadata Everywhere
 Every memory item (in `structured_memory`, events, and vector documents) carries rich provenance metadata.
 
-## Summarization Pipeline & Triggers
+## Summarization & Memory Updates
 
-The system uses an **intelligent, multi-stage summarization pipeline** to keep `memory_summary` concise and useful.
+The system uses **early and smart summarization** to keep `memory_summary` relevant and efficient.
 
-### Primary Trigger (Token-based)
-After each assistant response, if the estimated token count of the conversation history exceeds 65% of the target model’s context window, an **asynchronous summarization job** is queued (often via Inngest).
+### Triggers for Summarization
+- Token usage reaches ~60–65% of context window
+- Significant change in `overarching_focus` or `task_specific_focus` (pivot detection)
+- Workflow state changes (e.g., completion of a major step in eBay listing or auction pivot)
+- Explicit request from the agent or user
 
-### Secondary Triggers
-- Major change in `focus_state` or `pivot_detected`
-- Agent explicitly requests a summary or more memory
-- User explicitly requests a summary or says "remember this"
-- High-importance external events (based on `importance_score` and `labels`)
-- Long period of inactivity (periodic cleanup)
-- Model-detected low coherence (optional future self-check)
-
-### Multi-Stage Summarization Pipeline (Background)
-1. **Extraction** — Identify key facts, decisions, preferences, open questions, and important external events using rich metadata.
-2. **Compression** — Summarize non-critical parts into concise bullets.
-3. **Merge** — Combine new summary with existing `memory_summary` and `structured_memory`.
-4. **Validation** (optional) — Quick coherence check.
-
-The pipeline produces updated `memory_summary` and `structured_memory`. The new state is written back to `thread_context` and Redis cache is invalidated.
+Summarization is coordinated with Mem0 to maintain coherence between `memory_summary` and `structured_memory`.
 
 ## Pivot Handling
 
@@ -130,34 +139,20 @@ Compaction (also called memory consolidation or "dreaming") reorganizes, dedupli
 
 Compaction runs asynchronously (typically via Inngest) and respects all rich metadata.
 
-## Forgetting and Decay Mechanisms
+## Memory Pruning
 
-Forgetting and decay affect only active memory (`memory_summary` and `structured_memory`). Full raw history remains immutable.
-
-### Decay Strategy
-Every memory item carries rich metadata that drives decay decisions:
-- `importance_score`, `labels`, `pinned`, `timestamp`
-
-**Decay Rules**:
-- `pinned = true` or `critical` → Never decayed.
-- `strategic` or `user-preference` → Decay extremely slowly.
-- High `importance_score` → Decay slowly.
-- `transient` or low `importance_score` → Decay faster.
-
-### Pruning & Archiving
-Low-importance items are compressed or removed from active memory. Very old, low-relevance items may be archived to vector indexes (pgvector primary, OpenSearch optional).
+Low-importance items may be pruned from active memory based on metadata (importance_score, labels, pinned status, timestamp). Full raw history in `conversation_messages` remains immutable.
 
 ## Integration Points
 
-Memory Management integrates with every major layer:
+Memory Management (powered by Mem0) integrates with every major layer:
 
-- **Data Layer**: Primary storage is Supabase Postgres + pgvector (`thread_context`, `conversation_messages`, `checkpoints`).
-- **External Event Controller / Inngest**: Event Worker and Inngest functions inject structured events with rich metadata. Background summarization, compaction, and decay jobs run as Inngest workflows.
-- **Request Flow & TS Resolver**: `prompt_resolution` receives memory signals; post-response handler triggers summarization, compaction, and checkpointing.
-- **Prompt Management**: `memory_summary` and `structured_memory` are injected as variables.
-- **Tool Layer**: Tools read from `structured_memory`; tool results are added with rich metadata.
-- **Notification Strategy (Knock)**: Notification events and HITL outcomes are stored in memory with rich metadata and labels.
-- **Observability (Langfuse)**: All memory operations are fully traced in Langfuse.
+- **Request Flow & TS Resolver**: `prompt_resolution` pulls memory (including 3-level focus and workflow state) from Mem0.
+- **Prompt Management**: `memory_summary` and relevant parts of `structured_memory` are injected as variables.
+- **Tool Layer & Skills**: Skills can read from and write to Mem0 (especially workflow-specific state).
+- **External Event Controller / Inngest**: Events can trigger memory updates via Mem0.
+- **Notification Strategy (Knock)**: HITL outcomes and notifications update memory state.
+- **Observability (Langfuse)**: All Mem0 operations (reads, writes, summarization, focus changes) are fully traced.
 
 ## Extensibility & Future Evolution
 
@@ -169,14 +164,8 @@ Memory Management is designed to scale to multi-agent SME decomposition.
 - `structured_memory` is fully extensible via JSONB.
 - The multi-stage pipelines are modular.
 
-**Future Evolution**:
-- Cross-conversation / User-level memory
-- Memory consolidation / "Dreaming" jobs (via Inngest)
-- Explicit memory layering (episodic, semantic, procedural, strategic)
-- Advanced forgetting / decay using semantic similarity and user-defined policies
-- Memory sharing across SME agents
-- Optional OpenSearch layer for very large scale or advanced semantic workloads
-
 ## Summary
 
-Memory Management in the AI Yard Assistant is a complete, production-grade system that treats user messages and external system events as first-class citizens, maintains rich metadata and labels, uses intelligent multi-stage summarization and compaction, supports checkpointing, and provides forgetting/decay mechanisms. It is deeply integrated with every layer (Supabase, Inngest, Knock, Langfuse) and designed for long-term scalability and robustness.
+Memory Management in the AI Yard Assistant is powered by **Mem0** as the primary engine, combined with Supabase for raw history and hot caching. It treats user messages and external system events as first-class citizens, maintains a 3-level hierarchical focus system, supports workflow-specific memory namespaces, and provides strong observability through Langfuse.
+
+This design supports phone conversations, complex multi-step workflows (such as auction pivot and eBay listing), and long-term scalability while remaining simple and maintainable in Phase 0.

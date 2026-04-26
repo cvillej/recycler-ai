@@ -1,6 +1,6 @@
 # tool-layer.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — LangGraph for Skills only
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — LangGraph for Skills only + Post-Purchase Skills
 
 This document defines the Tool Layer — how tools are defined, discovered, selected, and presented to the LLM in the AI Yard Assistant.
 
@@ -116,7 +116,7 @@ This explicit contract prevents bad data from reaching tools and makes agent beh
 Once a tool is called:
 
 1. Argument validation (especially for canonical ID requirements)
-2. Entity resolution (if needed)
+2. Entity resolution (agent data via Supabase; business entities via thin API layer when needed)
 3. Tool execution (TypeScript or Python implementation)
 4. Structured result formatting
 5. Logging and observability
@@ -185,6 +185,7 @@ Example Skills we will define:
 - `GenerateFullValuationReport` — Runs market comp search + margin analysis + generates formatted report.
 - `ExecuteBiddingSessionWithBudgetCheck` — Monitors active auction, checks budget, places bids within policy, handles outbid scenarios (can involve Inngest + Knock HITL).
 - `SmartInventoryIntake` — AI identification + entity resolution + create/update part record (photo intake portion deferred in Phase 0).
+- `ManageEbayListingAfterPurchase` — Guides user through part selection, photo upload, pricing, and lists parts on eBay (multi-step HITL workflow).
 
 The LLM still has full agency to decide *which* Skill to invoke and *when*, but once invoked, the Skill executes deterministically.
 

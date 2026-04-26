@@ -6,7 +6,7 @@ version: '3.8'
 #
 # Services:
 #   - Inngest (background jobs + HITL)
-#   - Ably Local (realtime)
+#   - LiteLLM (LLM Gateway + Proxy via aiproxy)
 #   - Langfuse v3 (observability) with ClickHouse + Redis + MinIO
 #   - Dozzle (unified log viewer)
 #
@@ -36,15 +36,40 @@ services:
       retries: 3
 
   # ============================================
-  # ABLY LOCAL — Realtime Development Server
+  # LITELLM — LLM Gateway + Proxy (aiproxy + LiteLLM)
   # ============================================
-  ably-local:
-    image: ably/ably-local:latest
-    container_name: ably-local
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.83.7-stable
+    container_name: litellm-cursor-proxy
     ports:
-      - "8080:8080"
+      - "4000:4000"
+    env_file:
+      - .env
     environment:
-      - ABLY_LOCAL_LOG_LEVEL=info
+      LITELLM_LOG: DEBUG
+      STORE_MODEL_IN_DB: "False"
+      DATABASE_URL: ""
+      LITELLM_DB_TYPE: "none"
+      allow_requests_on_db_unavailable: "True"
+      PRISMA_SCHEMA: ""
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./custom_hooks.py:/app/custom_hooks.py
+    command: >
+      litellm
+      --config /app/config.yaml
+      --port 4000
+      --detailed_debug
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     restart: unless-stopped
 
   # ============================================
@@ -60,7 +85,7 @@ services:
     environment:
       - DOZZLE_LEVEL=info
       - DOZZLE_TAILSIZE=300
-      - DOZZLE_FILTER="container=~^(inngest|ably-local|langfuse-web|langfuse-worker|clickhouse|redis|minio)$"
+      - DOZZLE_FILTER="container=~^(inngest|langfuse-web|langfuse-worker|clickhouse|redis|minio)$"
     restart: unless-stopped
 
   # ============================================

@@ -10,7 +10,7 @@ The AI Yard Assistant is a **hybrid conversational + event-driven system** with 
 
 ### Control Plane (Enforcement & Orchestration)
 - `Context Enricher` + `effective_features` resolution
-- `NotificationService` (Knock for rich/HITL, Ably for realtime)
+- `NotificationService` (Knock for rich/HITL, Supabase Realtime for updates)
 - Inngest (durable workflows, "wait for event", HITL orchestration)
 - Quota / Feature / Canonical ID enforcement
 - This plane must be fast, reliable, and observable
@@ -19,7 +19,7 @@ The AI Yard Assistant is a **hybrid conversational + event-driven system** with 
 - `TS Resolver` + `prompt_resolution`
 - Tool Layer + LangGraph Skills (Skills only)
 - LLM calls via aiproxy/LiteLLM
-- Memory Management (summarization, compaction, checkpoints)
+- Memory Management (Mem0-powered, 3-level focus, workflow-specific memory, early summarization)
 
 **Key Principle**: Hard enforcement (features, quotas, safety, canonical IDs) happens **before** any LLM call.
 
@@ -27,7 +27,7 @@ The AI Yard Assistant is a **hybrid conversational + event-driven system** with 
 
 - **`contextId`** — Single source of truth identifier used across conversations, memory, traces, notifications, and background jobs.
 - **`ThreadContext`** — Lightweight, aggressively cached runtime snapshot.
-- **Hybrid Notifications** — Knock for rich/actionable/HITL, Ably for simple realtime updates.
+- **Hybrid Notifications** — Knock for rich/actionable/HITL, Supabase Realtime for simple updates.
 - **Full Observability** — Every decision uses the Decision Traceability Standard (`decision` / `reason` / `input` / `output`).
 
 ## Document Index
@@ -49,6 +49,9 @@ Use these when you need deep context. Load full documents **only** when the curr
 **Observability & Quality:**
 - Observability: `@../../docs/observability.md`
 - Failure Mode & HITL: `@../../docs/failure-mode-and-hitl.md`
+
+**Permissions & Gating:**
+- Permissions: `@../../docs/permissions.md`
 
 **Product:**
 - User Stories: `@../../docs/user-stories.md`

@@ -15,7 +15,7 @@ This document defines the recommended development strategy and step-by-step plan
 
 **Key Tools:**
 - **Taskfile.yml** — Single source of truth for all commands (root level)
-- **docker-compose.yml** — Full stack in project root (Inngest, Ably, Langfuse v3 full stack with ClickHouse/Redis/MinIO, Dozzle)
+- **docker-compose.yml** — Full stack in project root (Inngest, Supabase Realtime, Langfuse v3 full stack with ClickHouse/Redis/MinIO, Dozzle)
 - **Supabase CLI** — Best-in-class local Postgres + pgvector experience
 - **Dozzle** — Unified Docker log viewer (http://localhost:8081)
 - **Cursor + LLM Agent** — Primary development interface
@@ -29,7 +29,7 @@ This document defines the recommended development strategy and step-by-step plan
 | **Backend (Node.js)**  | Outside Docker      | Easy Cursor debugging + LLM can read source + logs directly |
 | **Supabase**           | `supabase start`    | Best local developer experience |
 | **Inngest**            | Docker (root compose) | Excellent local UI |
-| **Ably Local**         | Docker (root compose) | Simple and reliable |
+| **Supabase Realtime**       | `supabase start`      | Comes bundled with Supabase local instance |
 | **Langfuse v3**        | Docker (root compose) | Full stack with ClickHouse + Redis + MinIO |
 | **Dozzle**             | Docker (root compose) | Best unified log viewer |
 | **Redis / ClickHouse / MinIO** | Docker (root compose) | Required by Langfuse v3 |
@@ -45,7 +45,7 @@ This document defines the recommended development strategy and step-by-step plan
 **Tasks:**
 1. Set up monorepo (pnpm + Turborepo + Taskfile)
 2. Start full Docker stack: `docker compose up -d`
-3. Set up Supabase local via CLI + apply schema + migrate existing market data
+3. Set up Supabase local via CLI (agent tables only) + implement thin Business Data API layer for legacy Postgres access
 4. Create basic `Request Flow` skeleton
 5. Integrate Langfuse from day 1
 6. Create `task dev:all` and `task logs:errors` commands
@@ -67,8 +67,8 @@ This document defines the recommended development strategy and step-by-step plan
 **Tasks:**
 1. Implement full `prompt_resolution` + dynamic tool guidance
 2. Build Tool Layer + Entity Resolution (start with 4–5 core tools)
-3. Implement basic Memory Management (`memory_summary` + summarization)
-4. Add `effective_features` enforcement
+3. Integrate Mem0 for memory + basic 3-level focus
+4. Add `effective_features` + usage quota enforcement (Permissions system)
 5. Full end-to-end API testing (no UI yet)
 6. Set up Cursor debugging launch configurations
 
@@ -85,16 +85,19 @@ This document defines the recommended development strategy and step-by-step plan
 **Goal:** Make the system production-ready with proper background processing and observability.
 
 **Tasks:**
-1. Full Memory Management (compaction, checkpoints, decay)
-2. Inngest integration + Event Worker
-3. Quota enforcement + proper error handling
+1. Integrate Mem0 + implement 3-level hierarchical focus
+2. Inngest integration + Event Worker + hybrid BackgroundJobService
+3. Quota enforcement + Permissions/Gating system
 4. Comprehensive Langfuse tracing (Decision Traceability Standard)
 5. Basic Inngest + HITL workflow examples
+6. LiteLLM + aiproxy integration for LLM calls
 
 **Success Criteria:**
-- Long-running jobs work reliably via Inngest
-- Full observability across Request Flow, Memory, Tools, and Inngest
+- Mem0 + 3-level focus working correctly
+- Long-running jobs work reliably via Inngest + BackgroundJobService
+- Full observability across Request Flow, Memory (Mem0), Tools, and Inngest
 - LLM agent can trace issues end-to-end using Langfuse + Dozzle + logs
+- LiteLLM + aiproxy integration working
 
 ---
 
@@ -105,15 +108,15 @@ This document defines the recommended development strategy and step-by-step plan
 **Tasks:**
 1. Implement `NotificationService` abstraction
 2. Integrate Knock (rich notifications + deep links)
-3. Integrate Ably (realtime widget updates)
+3. Integrate Supabase Realtime (widget / badge updates)
 4. Build Mandatory Clarification Gate + basic HITL flows
 5. User preference engine integration
 
 **Success Criteria:**
 - Rich notifications work via Knock
-- Simple realtime updates work via Ably
+- Simple realtime updates work via Supabase Realtime
 - HITL flows (especially clarification gates) function correctly
-- LLM agent can debug notification issues using logs + Ably/Knock dashboards
+- LLM agent can debug notification issues using logs + Supabase Realtime/Knock dashboards
 
 ---
 
@@ -125,13 +128,13 @@ This document defines the recommended development strategy and step-by-step plan
 1. Set up Next.js 16 web app
 2. Build basic chat interface
 3. Implement Widget system foundation
-4. Connect to Ably for realtime updates
+4. Connect to Supabase Realtime for widget / badge updates (already configured)
 5. Add dev-mode annotations
 6. Polish and performance tuning
 
 **Success Criteria:**
 - Working chat interface with realtime updates
-- Widgets update correctly via Ably
+- Widgets update correctly via Supabase Realtime
 - Full end-to-end flow from user message → agent response → UI update
 
 ---

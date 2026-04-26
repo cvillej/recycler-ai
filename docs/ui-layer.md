@@ -1,6 +1,6 @@
 # ui-layer.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Ably + Knock
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Ably + Knock + Phone Channel Support
 
 This document defines the UI Layer architecture for the AI Yard Assistant. It supports a unified, high-quality experience across **Web, Mobile, and Tablet** while enabling rich composability, real-time updates, and modern user interface patterns.
 
@@ -8,9 +8,9 @@ This document defines the UI Layer architecture for the AI Yard Assistant. It su
 
 The UI Layer is responsible for delivering a consistent, responsive, and highly interactive experience across all platforms. It must:
 
-- Provide a unified experience on **Web, iOS, Android, and Tablet**
+- Provide a unified experience across **Web, Mobile, Tablet, and Phone** (phone as a first-class parallel channel)
 - Support **rich, composable widgets** inside and around the chat interface
-- Enable real-time, event-driven UI updates powered by **Ably**
+- Enable real-time, event-driven UI updates powered by **Supabase Realtime**
 - Deliver native-quality performance and features (push notifications via Knock, offline support, gestures, AR)
 - Maintain clean separation between presentation and business logic
 - Adapt dynamically to the user's current `focus_state` and available `effective_features`

@@ -6,7 +6,7 @@ version: '3'
 
 tasks:
   up:
-    desc: Start all Docker services (Inngest, Ably Local, Langfuse, Redis)
+    desc: Start all Docker services (Inngest, LiteLLM, Langfuse, Redis)
     cmds:
       - docker compose up -d
     silent: false
@@ -50,10 +50,10 @@ tasks:
     cmds:
       - docker compose up -d inngest
 
-  up:ably:
-    desc: Start only Ably Local
+  up:litellm:
+    desc: Start only LiteLLM
     cmds:
-      - docker compose up -d ably-local
+      - docker compose up -d litellm
 
   up:langfuse:
     desc: Start only Langfuse
@@ -65,12 +65,31 @@ tasks:
     cmds:
       - docker compose logs -f inngest
 
-  logs:ably:
-    desc: Show Ably Local logs
+  logs:litellm:
+    desc: Show LiteLLM logs
     cmds:
-      - docker compose logs -f ably-local
+      - docker compose logs -f litellm
 
   logs:langfuse:
     desc: Show Langfuse logs
     cmds:
       - docker compose logs -f langfuse-web
+
+  # =============================================================================
+  # Convenience Commands
+  # =============================================================================
+
+  dev:
+    desc: Start core development services (Inngest + LiteLLM + Langfuse)
+    cmds:
+      - docker compose up -d inngest litellm langfuse-web langfuse-worker
+
+  logs:all:
+    desc: Follow logs from all services
+    cmds:
+      - docker compose logs -f
+
+  ps:
+    desc: Show running services
+    cmds:
+      - docker compose ps

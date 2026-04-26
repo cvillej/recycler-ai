@@ -33,9 +33,9 @@ export async function validateArchitecture(input: ValidateArchitectureInput): Pr
       message: "Hard enforcement (features, quotas, canonical IDs) must happen before any LLM call"
     },
     {
-      name: "Use Ably for Realtime",
-      check: () => desc.includes("realtime") && !desc.includes("ably"),
-      message: "All realtime updates should use Ably, not Supabase Realtime"
+      name: "Use Supabase Realtime for updates",
+      check: () => desc.includes("realtime") && !desc.includes("supabase"),
+      message: "All realtime updates should use Supabase Realtime"
     },
     {
       name: "Use Knock for Rich Notifications",
@@ -66,7 +66,7 @@ export async function validateArchitecture(input: ValidateArchitectureInput): Pr
   }
 
   // Determine if full docs should be loaded
-  if (violations.length > 0 || desc.includes("complex") || desc.includes("memory") || desc.includes("hitl")) {
+  if (violations.length > 0 || desc.includes("complex") || desc.includes("hitl") || desc.includes("workflow")) {
     shouldLoadFullDocs = true;
     recommendations.push("Consider loading relevant architecture documents for deeper validation");
   }

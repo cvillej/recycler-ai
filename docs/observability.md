@@ -1,6 +1,6 @@
 # observability.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Inngest + Knock + Langfuse
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Focused High-Value Tracing + Mem0 + Langfuse
 
 This document defines the complete observability strategy for the AI Yard Assistant. It ensures every action, decision, failure, and user interaction is fully traceable, measurable, and actionable.
 
@@ -18,6 +18,49 @@ It enables us to:
 - Support future multi-agent decomposition with clear visibility across agents
 
 Without strong observability, even the best architecture becomes a black box.
+
+## High-Value Tracing Priorities (Phase 0)
+
+We take a **focused, high-value-first** approach to tracing:
+
+Instead of instrumenting everything equally, we deeply trace the flows that have the highest impact on customer experience and business ROI from day one.
+
+### Priority 1: Phone Channel (First-Class Citizen)
+- All phone conversation flows
+- Photo upload handling
+- Async callbacks and "call me back" scenarios
+- Phone-specific memory and focus management
+
+### Priority 2: Auction Pivot Workflow
+- Auction loss detection
+- Pivot recommendation generation
+- Multi-step pivot logic
+- User interaction with recommendations
+
+### Priority 3: Post-Purchase / eBay Listing Workflow
+- Multi-step HITL process (part selection, photo requests, pricing)
+- Workflow state management in Mem0
+- External eBay integration calls
+
+### Priority 4: Memory Operations (Mem0)
+- All Mem0 reads, writes, and updates
+- 3-level focus changes and drift detection
+- Summarization operations
+- Workflow-specific memory namespaces
+
+### Priority 5: All HITL Interactions
+- Proposal → User decision → Outcome flows
+- Knock deep link interactions
+- Approval gates and clarifications
+
+### Priority 6: Key Business Decisions
+- Entity resolution
+- Pricing and valuation recommendations
+- Bidding decisions and budget checks
+
+For lower-priority paths (internal utilities, simple tools, non-critical background jobs), we use lighter or selective tracing.
+
+This approach gives us excellent visibility where it matters most while maintaining high development velocity.
 
 ## Core Principles
 
@@ -90,8 +133,22 @@ Every major component emits traces and events with rich context:
 
 ### Background Jobs
 - Long-running report generation and bulk operations
-- Scheduled compaction and memory jobs (via Inngest)
+- Scheduled memory jobs (via Inngest)
 - Data sync and external system jobs
+
+### Memory (Mem0)
+Mem0 is the primary memory engine. All memory operations must be fully observable in Langfuse:
+
+- **Memory Reads**: Every time `prompt_resolution`, Skills, or tools read from Mem0 (including `memory_summary`, `structured_memory`, and 3-level focus).
+- **Memory Writes/Updates**: Any creation or update of structured memory, workflow state, or focus levels.
+- **Summarization Operations**: When Mem0 or our system triggers summarization of conversation history.
+- **Focus Changes**: Any change to `overarching_focus`, `task_specific_focus`, or `subtask_focus`, including drift detection.
+- **Retrieval Operations**: When Mem0 performs relevance-based retrieval for long-term memory.
+
+**Recommended Tracing:**
+- Use clear span names: `mem0.read`, `mem0.write`, `mem0.summarize`, `mem0.focus_change`
+- Include attributes: `workflow` (e.g., `ebay_listing`), `focus_level_changed`, `tokens_from_memory`, `retrieval_score`
+- All memory spans must include `contextId` for correlation.
 
 All traces include `contextId`, `user_id`, `yard_id`, `focus_state`, and `timestamp` for easy correlation across systems.
 
@@ -111,7 +168,7 @@ These four fields are attached to every relevant span in Langfuse.
 ### Component Tagging
 
 Every span is tagged with a `component` attribute:
-- `entity_resolver`, `prompt_resolution`, `tool_layer`, `skill_execution`, `memory_compaction`, `context_enricher`, `inngest_workflow`, `knock_notification`, `hitl_gate`, `quota_enforcer`, etc.
+- `entity_resolver`, `prompt_resolution`, `tool_layer`, `skill_execution`, `memory_management`, `context_enricher`, `inngest_workflow`, `knock_notification`, `hitl_gate`, `quota_enforcer`, etc.
 
 ### Configurable Observability
 
@@ -169,7 +226,7 @@ Observability is deeply embedded in every layer:
 - **Request Flow**: Every request creates a root trace in Langfuse with `contextId`.
 - **External Event Controller / Inngest**: Every Inngest function and workflow is traced and linked to `contextId`.
 - **Knock**: All notification dispatch, delivery, and interaction events are logged with `contextId`.
-- **Memory Management**: Summarization, compaction, and pivot operations are traced with rich metadata.
+- **Memory Management**: Summarization and pivot operations are traced with rich metadata.
 - **Tool Layer**: Every tool and Skill call (including LangGraph execution) is logged as a child span.
 - **aiproxy / LiteLLM**: All LLM calls are traced with cost and cache status.
 

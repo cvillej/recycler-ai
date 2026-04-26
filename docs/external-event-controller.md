@@ -1,6 +1,6 @@
 # external-event-controller.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Inngest + Knock + Ably
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Inngest + Knock + Supabase Realtime + Auction Pivot Support
 
 This document describes the External Event Controller layer — the control plane responsible for handling all non-user input, enforcing hard controls, resolving user plans, and enabling proactive behavior.
 
@@ -13,7 +13,7 @@ The External Event Controller is the **nervous system** of the AI Yard Assistant
 - Performs hard enforcement before any request reaches the LLM
 - Injects structured events into conversations to drive proactivity
 - Coordinates with aiproxy for final LiteLLM-level budgeting and access enforcement
-- Manages background jobs via Inngest and notifications via Knock + Ably
+- Manages background jobs via Inngest and notifications via Knock + Supabase Realtime
 
 It keeps the core reasoning loop (TS Resolver + prompt + LLM) clean by handling control and external reactivity separately.
 
@@ -64,7 +64,7 @@ Events can arrive through **passive** (webhooks, queues, cron) and **active** (R
 ### Processing Steps
 
 1. Validate and normalize the payload
-2. Update relevant business state
+2. Update relevant business state (via thin API layer when interacting with legacy data)
 3. Determine affected `contextId`(s)
 4. Create a structured event message
 5. Append it to conversation history
@@ -106,13 +106,13 @@ When the Event Worker processes an event, it evaluates importance using business
 - Routes it through the normal pipeline (Context Enricher → TS Resolver → prompt → aiproxy)
 - Sends appropriate notifications via Knock
 
-**Examples** include aging inventory alerts, valuation insights, and quota warnings.
+**Examples** include aging inventory alerts, valuation insights, quota warnings, and **auction loss + pivot recommendations** (e.g., suggesting alternative vehicles when a user is outbid).
 
 **Safeguards** include cooldowns, user opt-out, and respect for `effective_features`.
 
 ## Notification Routing (Hybrid)
 
-- **Simple in-app / realtime updates** (widget state, badge counts, ThreadContext changes) → Ably
+- **Simple in-app / realtime updates** (widget state, badge counts, ThreadContext changes) → Supabase Realtime
 - **Rich, actionable, multi-channel, or HITL notifications** → Knock
 
 This hybrid model optimizes for cost, latency, and user experience.

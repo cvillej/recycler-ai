@@ -37,8 +37,8 @@ const DOC_INDEX = [
   {
     file: "memory-management.md",
     path: "@../../docs/memory-management.md",
-    keywords: ["memory", "summary", "structured", "compaction", "checkpoint"],
-    summary: "memory_summary, structured_memory, summarization, compaction, checkpoints"
+    keywords: ["memory", "mem0", "focus", "workflow"],
+    summary: "Mem0-powered memory, 3-level focus, workflow-specific state, early summarization"
   },
   {
     file: "external-event-controller.md",
@@ -63,6 +63,12 @@ const DOC_INDEX = [
     path: "@../../docs/observability.md",
     keywords: ["trace", "langfuse", "metric", "log", "debug"],
     summary: "Langfuse tracing, decision traceability, metrics, dashboards"
+  },
+  {
+    file: "permissions.md",
+    path: "@../../docs/permissions.md",
+    keywords: ["permission", "feature", "gating", "plan", "quota", "subscription"],
+    summary: "Feature gating, subscription tiers, usage quotas, trials, upgrade paths"
   }
 ];
 

@@ -1,12 +1,12 @@
 # prompt-management.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — LangGraph Skills + Inngest
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Mem0 + 3-Level Focus + Permissions
 
 This document defines how prompts are selected, assembled, and managed in the AI Yard Assistant. The core abstraction is the `prompt_resolution` function.
 
 ## Purpose of Prompt Management
 
-Prompt Management ensures the LLM receives the most relevant, precise, and efficient prompt for the current conversation state while respecting user permissions and business constraints.
+Prompt Management ensures the LLM receives the most relevant, precise, and efficient prompt for the current conversation state. It pulls memory primarily from **Mem0** (including 3-level hierarchical focus and workflow-specific state), respects `effective_features` and usage quotas from the Permissions system, and optimizes for token efficiency and Langfuse observability.
 
 Key goals:
 - Context-aware prompt selection and assembly
@@ -42,7 +42,26 @@ interface PromptResolutionInput {
   userId: string;
 
   // First-class runtime state
-  threadContext: ThreadContext;           // focus_state, pivot_detected, memory_summary, user_plan, etc.
+  threadContext: ThreadContext;
+
+  // Memory (primarily from Mem0)
+  memory: {
+    summary: string;
+    structured: any;                    // workflow-specific + general facts
+    focus: {
+      overarching: string;
+      task_specific: string;
+      subtask: string;
+    };
+  };
+
+  // Permissions & Usage
+  effective_features: string[];
+  usage_state: {
+    plan: string;
+    tokens_remaining: number;
+    trial_active: boolean;
+  };
 
   // Conversation history window
   recentMessages: Message[];              // last N full messages for immediate context
@@ -93,7 +112,7 @@ interface PromptResolutionResult {
 
 Inside `prompt_resolution`, selection is **composite** rather than based on `focus_state` alone.
 
-- **Primary signal**: `threadContext.focus_state` — maps directly to a top-level Langfuse prompt.
+- **Primary signal**: `memory.focus` (3-level hierarchical focus) — `overarching_focus` is the strongest signal for top-level prompt selection, with `task_specific_focus` and `subtask_focus` used for refinement.
 - **Refinement signals**: `pivot_detected`, `conversationPhase`, `activeBusinessContext`, `resolvedEntities`, `recentEvents`, `user_plan.effective_features`, and `inngestWorkflowState`.
 - **Fallback**: Defaults to `chat-default` if no strong match.
 
@@ -104,9 +123,12 @@ The resolver uses a hybrid decision engine (hard rules + weighted scoring) for r
 Once the top-level prompt is selected, variables are injected using Langfuse’s compile mechanism.
 
 Core variables include:
-- `memory_summary` and `structured_memory`
-- `effective_features_list`
-- `token_monthly_remaining`
+- `memory.summary` (from Mem0)
+- `memory.structured` (workflow-specific + general facts)
+- `memory.focus` (3-level hierarchical focus)
+- `effective_features`
+- `usage_state.tokens_remaining`
+- `usage_state.plan`
 - `recent_events`
 - `resolved_entities`
 - `activeBusinessContext`

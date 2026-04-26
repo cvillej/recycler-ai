@@ -1,6 +1,6 @@
 # development-env.md
 **Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Full Langfuse v3 Stack + Inngest + Ably + Dozzle
+**Status:** Updated (Zoom Level 2) — Full Langfuse v3 Stack + Inngest + Supabase Realtime + Dozzle
 
 This document defines the local development environment for the `recycler-ai` project. It is optimized for **macOS M4 (Apple Silicon)**, fast iteration with Cursor AI, accurate tracing, trace replay, and dev-mode annotations.
 
@@ -9,7 +9,7 @@ This document defines the local development environment for the `recycler-ai` pr
 The development environment must enable:
 - Extremely fast iteration across web, mobile, and backend
 - Excellent visibility into console logs and errors for Cursor AI (while minimizing token usage)
-- Accurate local Supabase, Inngest, Ably, and full Langfuse v3 tracing with easy pull and replay
+- Accurate local Supabase, Inngest, Supabase Realtime, and full Langfuse v3 tracing with easy pull and replay
 - Dev-mode annotations that appear in traces
 - A clean, shared todo system that both you and AI coding agents can read and update efficiently
 
@@ -17,6 +17,7 @@ The development environment must enable:
 
 | Category                  | Technology                              | Notes |
 |---------------------------|-----------------------------------------|-------|
+| **Node Version Manager**  | fnm + Corepack                          | Fast, lightweight, excellent M4 support |
 | **Package Manager**       | pnpm (with workspaces)                  | Fastest, lowest disk usage on M4 |
 | **Monorepo Tool**         | Turborepo                               | Smart caching for Next.js + Expo |
 | **Task Runner**           | Taskfile.yml                            | Human-friendly commands |
@@ -27,7 +28,7 @@ The development environment must enable:
 | **Shared Logic**          | packages/shared                         | Types, API client, realtime |
 | **Backend**               | TypeScript (Node.js)                    | Resolver, Event Worker, Inngest functions |
 | **Database**              | Supabase Postgres + pgvector            | Primary database + vector search |
-| **Realtime**              | Ably (not Supabase Realtime)            | Low-latency widget updates |
+| **Realtime**              | Supabase Realtime                       | Low-latency widget updates |
 | **Background Jobs**       | Inngest                                 | Durable workflows, HITL, retries |
 | **Notifications**         | Knock                                   | Rich notifications + deep links |
 | **Observability**         | **Langfuse v3 (Full Stack)**            | ClickHouse + Redis + MinIO |
@@ -57,7 +58,7 @@ recycler-ai/
 ├── .cursor/
 │   └── rules/
 ├── Taskfile.yml                # Main dev commands (root level)
-├── docker-compose.yml          # Full stack (Inngest, Ably, Langfuse v3 full stack, Dozzle)
+├── docker-compose.yml          # Full stack (Inngest, LiteLLM, Langfuse v3 full stack, Dozzle)
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml
@@ -86,7 +87,7 @@ cp .env.example .env
 ### 3. Start All Supporting Services
 
 ```bash
-# Start the full Docker stack (Inngest, Ably, Langfuse v3 full stack, Dozzle)
+# Start the full Docker stack (Inngest, LiteLLM, Langfuse v3 full stack, Dozzle)
 docker compose up -d
 
 # Start Supabase local (separate from Docker)
@@ -112,7 +113,7 @@ task logs:errors
 - Langfuse: http://localhost:3000
 - Inngest: http://localhost:8288
 - Dozzle: http://localhost:8081
-- Ably Local: ws://localhost:8080
+- Supabase Realtime: ws://localhost:54321/realtime/v1 (via Supabase)
 
 ## Supabase Setup (Detailed)
 

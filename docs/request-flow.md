@@ -1,6 +1,6 @@
 # request-flow.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Inngest + Knock + Ably
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Inngest + Knock + Ably + Phone Channel Support
 
 This document defines the complete request flow for the AI Yard Assistant, including how incoming requests (from UI or programmatic sources) are processed, enriched, resolved, and how responses + side effects are handled.
 
@@ -13,7 +13,7 @@ The Request Flow is the central orchestration layer that ties together all other
 - Resolving prompts, tools, features, and behavior
 - Executing the LLM call via aiproxy/LiteLLM
 - Handling post-response actions safely (memory, summarization, async injection, notifications)
-- Supporting both normal chat and **programmatic / headless** message injection
+- Supporting **chat, phone/voice, and programmatic / headless** message injection
 
 This flow ensures consistency whether a message comes from the UI or from a script/external system.
 
@@ -21,7 +21,7 @@ This flow ensures consistency whether a message comes from the UI or from a scri
 
 Every request follows this sequence:
 
-1. **Request Ingestion** → Chat Transport receives the message (via REST, WebSocket, or internal call). Some paths come through Inngest functions.
+1. **Request Ingestion** → Channel Transport receives the message (via REST, WebSocket, phone, or internal call). Some paths come through Inngest functions.
 2. **Authentication & Authorization** → Validate user/session and permissions
 3. **ThreadContext Construction** → Load or create `ThreadContext` for the `contextId`
 4. **Context Enrichment** → Context Enricher runs (user_plan, effective_features, recent events, entity resolution, focus_state, pivot detection)
@@ -62,7 +62,7 @@ The system supports sending messages **programmatically** without going through 
 - The message is treated exactly like any other message in the flow.
 - It goes through Context Enrichment, Prompt Resolution, and Post-Response Handling.
 - It is stored in `conversation_messages` with the correct `message_type` and metadata.
-- Memory management, summarization, and compaction handle it intelligently based on labels and importance_score.
+- Memory management and summarization handle it intelligently based on labels and importance_score.
 - Observability logs it with full traceability.
 
 This makes it safe to inject async results, external notifications, or test messages without corrupting normal chat flow.
@@ -86,7 +86,7 @@ It is loaded early and enriched before prompt resolution.
 Runs as part of the External Event Controller (and can also be triggered from Inngest functions). Responsibilities:
 - Resolve `effective_features` via the 5-level cascade
 - Inject recent external events
-- Perform entity resolution
+- Perform entity resolution (agent data via Supabase; business data via thin API layer)
 - Detect `focus_state` and `pivot_detected`
 - Patch the enriched data into `ThreadContext`
 
@@ -112,12 +112,11 @@ After the LLM returns:
 
 1. Store the assistant message
 2. Update memory (`memory_summary`, `structured_memory`)
-3. Trigger summarization/compaction if needed
+3. Trigger summarization if needed
 4. Handle pivot detection and pivot_pipeline
-5. Create checkpoints when appropriate
 6. Process any async task completions or external injections
 7. Trigger Inngest workflows for background jobs or HITL orchestration when needed
-8. Route notifications via the NotificationService (Knock for rich/HITL, Ably for realtime updates)
+8. Route notifications via the NotificationService (Knock for rich/HITL, Supabase Realtime for updates)
 9. Invalidate caches
 10. Log full trace to Langfuse
 

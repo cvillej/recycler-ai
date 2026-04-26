@@ -1,17 +1,17 @@
 # data-layer.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Supabase Primary + pgvector
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Hybrid Model: Supabase (Agent Data) + Thin API Layer (Business Data)
 
 This document defines the complete storage architecture for the AI Yard Assistant. It covers both the agent conversation layer and the core salvage yard business domain.
 
 ## Purpose of the Data Layer
 
-The Data Layer serves as the **single source of truth** for:
+The Data Layer uses a **hybrid model**:
 
-- All conversation history and runtime state (`ThreadContext`, messages, memory)
-- The full salvage yard business domain (inventory, parts, vehicles, auctions, sales, market data)
-- User plans, permissions, notification preferences, and usage tracking
-- Data required for entity resolution, semantic search, and RAG
+- **Agent Database (Supabase)**: Conversation history, runtime state (`ThreadContext`, messages, memory), user plans, checkpoints, and agent-specific data.
+- **Business Data Access Layer (Thin Internal API)**: Inventory, parts, vehicles, market data, and other core salvage yard domain data (sourced from the existing production Postgres via a controlled abstraction).
+- User plans, permissions, notification preferences, and usage tracking remain in the Agent Database.
+- Data required for entity resolution, semantic search, and RAG (primarily agent-owned data).
 
 It must support:
 - **Fast reads** for the TS Resolver and Context Enricher
@@ -19,16 +19,18 @@ It must support:
 - **Rich querying** for tools and analytics
 - **Vector similarity search** for entity resolution and semantic recall
 
-## Primary Database: Supabase Postgres + pgvector
+## Agent Database: Supabase Postgres + pgvector
 
-**Primary Database**: Supabase Postgres (with `pgvector` extension enabled)
+**Agent Database**: Supabase Postgres (with `pgvector` extension enabled) — used exclusively for agent-owned data.
 
-**Rationale for Supabase**:
+**Rationale for Supabase (Agent Data)**:
 - Excellent local developer experience via Supabase CLI (`supabase start`)
-- Native `pgvector` support for entity resolution and semantic search
+- Native `pgvector` support for entity resolution and semantic search on agent data
 - Built-in Row Level Security (RLS) for multi-tenant safety
 - Managed scaling, backups, and connection pooling
 - Strong balance of velocity and control for Phase 0 and beyond
+
+**Business Data Access Layer**: A thin internal API / webservice that fronts the existing production Postgres database. This abstraction minimizes direct dependency on the legacy system, enables validation/caching at the boundary, and provides a clean migration path for business data in the future.
 
 We continue to use **Redis** aggressively for hot caching of `ThreadContext` and user plans.
 
@@ -41,10 +43,10 @@ All conversations and related data are identified by a single top-level field:
 This identifier is used across:
 - `conversation_messages`
 - `thread_context`
-- `memory_summary`, `structured_memory`, `checkpoints`
+- `memory_summary`, `structured_memory`
 - Langfuse traces (`session_id = contextId`)
 - Inngest workflow metadata
-- Knock and Ably events
+- Knock and Supabase Realtime events
 - Future A2A inter-agent communication
 
 **Migration Note**: Existing references to `thread_id` will be migrated to `contextId` as subsystems are updated.
@@ -92,31 +94,33 @@ CREATE INDEX idx_thread_context_user_id ON recycleai.thread_context(user_id);
 CREATE INDEX idx_thread_context_yard_id ON recycleai.thread_context(yard_id);
 ```
 
-### Business Domain Layer
+### Business Data Access Layer
 
-Key tables for the salvage yard domain (Phase 0 focus):
+Business domain data (inventory, vehicles, parts, market comps, etc.) is **not stored directly in Supabase**. It is accessed through a thin internal API layer that fronts the existing production Postgres database.
 
-- `recycleai.vehicles`
-- `recycleai.parts`
-- `recycleai.inventory`
-- `recycleai.auctions` (deferred but schema-ready)
-- `recycleai.sales`
-- `recycleai.market_comps` (already populated with your existing data)
-- `recycleai.user_plans`
-- `recycleai.usage_ledger`
+This design:
+- Minimizes direct dependency on the legacy system
+- Allows data validation, transformation, and caching at the API boundary
+- Provides a clear path for gradual migration of business data into a clean schema later
 
-All business tables include `yard_id` for multi-tenant isolation and proper indexing.
+Key business entities accessed via the API layer (Phase 0 focus):
+- Vehicles, parts, inventory
+- Market comps and pricing data
+- Auction and sales records (deferred integrations)
 
 ## Vector Search & Entity Resolution
 
-We use `pgvector` extensively for:
+`pgvector` (in Supabase) is used primarily for:
 
-- Entity resolution (fuzzy matching of parts, vehicles, and references)
-- Semantic recall of past conversations and decisions
-- RAG over market data and internal knowledge
+- Entity resolution and semantic recall on **agent-owned data** (conversations, memory, pinned facts)
+- Supporting the TS Resolver and prompt context
 
-**Key Vector Tables**:
-- `salvage_resolver` (entity resolution embeddings)
+Business entity resolution (vehicles, parts, inventory) typically combines:
+- API calls to the Business Data Layer
+- Cached lightweight records or embeddings in Supabase where performance requires it
+
+**Key Vector Tables** (in Supabase Agent Database):
+- `salvage_resolver` (entity resolution embeddings for agent data)
 - `salvage_agent_responses` (conversation memory vectors)
 - `salvage_market_signals` (market data vectors)
 
@@ -183,23 +187,24 @@ We use **Redis** for hot-path caching:
 
 As the system grows, we can:
 
+- Gradually migrate business data from the legacy Postgres into a clean schema (via the thin API layer)
 - Add read replicas for analytics workloads
 - Introduce sharding by `yard_id` if single-tenant performance becomes a bottleneck
 - Move cold data (old conversations, completed auctions) to cheaper storage tiers
 - Add a dedicated analytics warehouse (e.g., ClickHouse or BigQuery) for heavy reporting
 - Introduce a separate vector database (e.g., Pinecone or Weaviate) if `pgvector` scaling limits are reached
 
-All of these changes can be made with minimal impact on the application layer because of our clean abstraction and `contextId`-centric design.
+All of these changes can be made with minimal impact on the application layer because of our clean abstraction layers and `contextId`-centric design.
 
 ## Summary
 
-The Data Layer is built on **Supabase Postgres + pgvector** with aggressive Redis caching. It provides:
+The Data Layer uses a **hybrid model**: Supabase Postgres + pgvector for all agent-owned data (conversations, memory, `ThreadContext`, etc.) combined with a thin internal API layer for business domain data. It provides:
 
-- A single source of truth for both conversational and business data
-- Native vector search for entity resolution and semantic recall
+- Clean separation between agent data and legacy business data
+- Native vector search for agent entity resolution and semantic recall
 - Excellent local development experience
-- Strong multi-tenant security via RLS
-- Clear migration path from existing data
+- Strong multi-tenant security via RLS (on agent data)
+- Clear, low-risk migration path from the existing production database
 - Future-proof foundation for scaling
 
-This design supports fast iteration in Phase 0 while providing a solid base for long-term growth.
+This design supports fast iteration in Phase 0 while providing a solid base for long-term growth and minimal dependency on the legacy system.

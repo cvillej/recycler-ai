@@ -1,6 +1,6 @@
 # architecture.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 1) — Phase 0 Scope Applied
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 1) — Phase 0 Scope Applied + Phone as First-Class Channel
 
 This is the highest-level entry point for the AI Yard Assistant architecture. All other documents exist at Zoom Level 2 or deeper. This document explains the **overall system design**, **how the major subsystems interact**, and **why we made the key architectural decisions**.
 
@@ -8,7 +8,7 @@ This is the highest-level entry point for the AI Yard Assistant architecture. Al
 
 The AI Yard Assistant is a **hybrid conversational + event-driven intelligent agent** built specifically for salvage yard operators. It combines:
 
-- A powerful conversational interface (chat + voice)
+- A powerful multi-channel conversational interface (**chat, phone/voice**, and programmatic)
 - Proactive intelligence (notifications, recommendations, alerts)
 - Background automation (Inngest workflows, HITL orchestration)
 - Rich, real-time UI updates (widgets, badges, state)
@@ -23,7 +23,7 @@ The architecture is built on a small number of non-negotiable principles:
 2. **contextId as the Universal Key** — Every conversation, trace, memory item, notification, and background job is tied to a single `contextId`.
 3. **ThreadContext as the Runtime Snapshot** — A lightweight, aggressively cached object that carries everything the agent needs to reason correctly.
 4. **Memory, Events, and Notifications are First-Class** — These are not afterthoughts; they are core to how the system behaves intelligently.
-5. **Mature Tools as Implementation Details** — We use best-in-class tools (Supabase, Inngest, Knock, Ably, Langfuse, LangGraph) under a clean abstraction layer so we maintain long-term coherence and elegance.
+5. **Mature Tools as Implementation Details** — We use best-in-class tools (Supabase, Inngest, Knock, Supabase Realtime, Langfuse, LangGraph, Mem0) under a clean abstraction layer so we maintain long-term coherence and elegance.
 6. **Full Observability by Default** — Every decision, failure, notification, and background job is traceable in Langfuse.
 7. **Clean Separation of Concerns** — Control Plane (enforcement, routing, orchestration) is strictly separated from Reasoning Plane (prompt resolution + LLM).
 
@@ -51,7 +51,7 @@ Post-Response Handler
    ↓ (parallel)
    ├── Memory Update + Summarization / Compaction
    ├── Inngest Workflow Trigger (if needed)
-   ├── NotificationService (Knock for rich/HITL, Ably for realtime)
+   ├── NotificationService (Knock for rich/HITL, Supabase Realtime for updates)
    └── Response returned to caller
 ```
 
@@ -72,7 +72,7 @@ Context Enricher (if user is active)
 NotificationService Decision
    ↓ (routes to)
    ├── Knock (rich notification + deep link + HITL)
-   └── Ably (realtime widget / badge update)
+   └── Supabase Realtime (widget / badge updates)
    ↓
 Inngest "wait for event" (if HITL required)
    ↓
@@ -106,27 +106,29 @@ This is one of the most important architectural distinctions in the system.
 
 | Document                        | Purpose                                                                 | Key Interactions |
 |--------------------------------|--------------------------------------------------------------------------|------------------|
-| [data-layer.md](./data-layer.md) | Supabase Postgres + pgvector as the single source of truth              | Used by almost every component |
+| [data-layer.md](./data-layer.md) | Hybrid model: Supabase (agent data) + Thin API layer (business data)    | Used by almost every component |
 | [request-flow.md](./request-flow.md) | Full synchronous request pipeline + programmatic injection              | Core of the Reasoning Plane |
 | [external-event-controller.md](./external-event-controller.md) | Inngest-powered event ingestion, Context Enricher, proactive behavior   | Bridges external world into the system |
 | [prompt-management.md](./prompt-management.md) | Dynamic prompt resolution + tool/Skill guidance                         | Heart of the Reasoning Plane |
 | [tool-layer.md](./tool-layer.md) | Tool execution + LangGraph Skills (encapsulated)                        | Called by TS Resolver |
-| [memory-management.md](./memory-management.md) | Summarization, compaction, checkpoints, decay                           | Runs in Post-Response Handler |
+| [memory-management.md](./memory-management.md) | Summarization and structured memory management                          | Runs in Post-Response Handler |
 | [failure-mode-and-hitl.md](./failure-mode-and-hitl.md) | Graceful degradation, Mandatory Clarification Gates, HITL patterns      | Deep integration with Request Flow + Inngest + Knock |
 | [notification-strategy.md](./notification-strategy.md) | Hybrid routing: Knock (rich/HITL) + Ably (realtime)                     | Used by Post-Response Handler + Event Worker |
 | [observability.md](./observability.md) | Langfuse tracing, Decision Traceability Standard, metrics               | Cross-cuts every component |
+| [permissions.md](./permissions.md) | Feature gating, subscription tiers, usage quotas, trials, and upgrade paths | Core business capability — resolved early in Context Enricher |
 | [development-env.md](./development-env.md) | Local development setup, Cursor + LLM workflow, logging strategy        | Developer productivity |
-| [ui-layer.md](./ui-layer.md) | Next.js + Expo + Widget system + Ably realtime                          | Consumes ThreadContext + Ably updates |
+| [ui-layer.md](./ui-layer.md) | Next.js + Expo + Widget system + Supabase Realtime                      | Consumes ThreadContext + Supabase Realtime updates |
 
 ## Key Technology Decisions + Rationale
 
 | Decision                    | Choice                          | Rationale |
 |----------------------------|----------------------------------|---------|
-| **Database**               | Supabase Postgres + pgvector    | Best-in-class local dev experience, managed scaling, built-in vector search |
-| **Realtime**               | **Ably** (not Supabase Realtime)| Superior performance, self-host option, lower long-term lock-in risk, excellent presence/history features |
-| **Background Jobs + HITL** | **Inngest**                     | Durable execution, built-in retries, "wait for event", excellent local dev server, long-term commitment |
+| **Database**               | Hybrid: Supabase (agent data) + Thin API layer (business data) | Best local dev experience + minimal dependency on legacy production DB |
+| **Realtime**               | **Supabase Realtime** (not Ably) | Already in stack, simpler integration, good enough for Phase 0, lower cost and complexity |
+| **Background Jobs + HITL** | **Hybrid (Inngest + pg-boss)**  | Inngest for complex/HITL workflows; pg-boss (Postgres queue) for simple/scheduled jobs. Accessed via `BackgroundJobService` abstraction |
 | **Rich Notifications**     | **Knock**                       | Best-in-class workflow engine, deep links, user preferences, delivery tracking, closed-loop HITL |
 | **Observability**          | **Langfuse**                    | Purpose-built for LLM apps, excellent trace replay, cost tracking, prompt versioning |
+| **Memory**                 | **Mem0**                        | Primary memory engine for structured memory, 3-level focus, workflow state, and long-term recall |
 | **Skills**                 | **LangGraph** (only for Skills) | Encapsulated deterministic multi-tool graphs. Main agent stays custom for maximum control |
 | **Main Agent Loop**        | Custom TS Resolver + `prompt_resolution` | Full control over prompt engineering, tool guidance, and feature enforcement |
 | **Auth Abstraction**       | **DevAuthService**              | Clean abstraction so we can swap Supabase Auth later without major refactors |
@@ -138,7 +140,7 @@ These choices give us **excellent velocity in Phase 0** while preserving **long-
 **In Scope:**
 - Inventory intelligence, valuation, and profitability insights
 - Aging inventory detection and recommended actions
-- Proactive notifications and recommendations via Knock + Ably
+- Proactive notifications and recommendations via Knock + Supabase Realtime
 - Strong conversational agent with `focus_state` awareness
 - HITL for high-impact decisions (bidding limits, pricing changes, etc.)
 - Full observability and memory management

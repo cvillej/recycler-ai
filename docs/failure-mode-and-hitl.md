@@ -1,6 +1,6 @@
 # failure-mode-and-hitl.md
-**Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Knock + Inngest + Ably HITL
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Knock + Inngest + Ably HITL + Post-Purchase Workflows
 
 This document defines how the AI Yard Assistant handles failures, partial information, and Human-In-The-Loop (HITL) scenarios. It ensures the system remains robust, transparent, and safe even when things go wrong.
 
@@ -114,6 +114,7 @@ HITL is used strategically for high-stakes or ambiguous situations.
 - Ambiguous user intent
 - External system failures affecting critical data
 - User explicitly requests confirmation
+- Multi-step post-purchase workflows (e.g., eBay listing with photo uploads and approvals)
 
 **HITL Flow:**
 

@@ -1,6 +1,6 @@
 # notification-strategy.md
-**Version:** April 25, 2026  
-**Status:** Complete (Zoom Level 2)
+**Version:** April 26, 2026  
+**Status:** Updated (Zoom Level 2) — Knock + Supabase Realtime (Ably removed)
 
 This document defines the complete notification strategy for the AI Yard Assistant. It covers how we deliver proactive alerts, rich Human-In-The-Loop (HITL) interactions, real-time UI updates, and background job completions across multiple channels while maintaining cost efficiency, excellent user experience, and full observability.
 
@@ -33,7 +33,7 @@ This categorization is enforced in the `NotificationService` and respected by In
 We use a **hybrid platform strategy**:
 
 - **Knock** — Primary platform for rich, actionable, multi-channel, and HITL notifications
-- **Ably** — Dedicated realtime platform for simple, low-latency in-app state updates (widget refreshes, badge counts, basic `ThreadContext` changes)
+- **Supabase Realtime** — Dedicated realtime platform for simple, low-latency in-app state updates (widget refreshes, badge counts, basic `ThreadContext` changes)
 
 ### Why Knock?
 
@@ -44,13 +44,13 @@ We use a **hybrid platform strategy**:
 - Strong TypeScript SDK that integrates cleanly with Inngest and our architecture
 - Delivery tracking and analytics built-in
 
-### Why Ably (instead of Supabase Realtime)?
+### Why Supabase Realtime (instead of Ably)?
 
-- Superior global performance and reliability
-- Better presence and message history features
-- Self-hosting option available (lower long-term lock-in risk)
-- Excellent developer experience and SDKs
-- More cost-effective at moderate scale
+- Already part of our stack (no additional vendor)
+- Good enough performance for Phase 0 widget and badge updates
+- Simpler integration and lower operational complexity
+- Cost-effective at our expected scale
+- Easy to swap later if needed (via NotificationService abstraction)
 
 ## Hybrid Routing Strategy
 
@@ -59,7 +59,7 @@ The `NotificationService` (in `packages/shared/notifications/`) makes the routin
 ### Routing Decision Logic
 
 ```typescript
-function decideRouting(notification: NotificationRequest): 'knock' | 'ably' {
+function decideRouting(notification: NotificationRequest): 'knock' | 'supabase_realtime' {
   if (notification.requiresUserAction || notification.importanceScore >= 0.8) {
     return 'knock';
   }
@@ -67,7 +67,7 @@ function decideRouting(notification: NotificationRequest): 'knock' | 'ably' {
     return 'knock';
   }
   if (notification.type === 'realtime_state_update' || notification.type === 'badge_count') {
-    return 'ably';
+    return 'supabase_realtime';
   }
   return 'knock'; // Default to Knock for most business notifications
 }
@@ -76,9 +76,9 @@ function decideRouting(notification: NotificationRequest): 'knock' | 'ably' {
 **Practical Rules:**
 - Any notification that requires user action or approval → **Knock**
 - Any notification that needs push, email, or SMS → **Knock**
-- Purely visual/UI state updates (badge counts, widget refreshes) → **Ably**
+- Purely visual/UI state updates (badge counts, widget refreshes) → **Supabase Realtime**
 - High `importance_score` or user has rich delivery preference → **Knock**
-- Simple informational updates when user is online → **Ably** (faster, cheaper)
+- Simple informational updates when user is online → **Supabase Realtime** (faster, cheaper)
 
 This hybrid approach keeps costs predictable while delivering the best possible experience.
 

@@ -59,6 +59,14 @@ They will only adopt and pay for a tool that delivers **clear, immediate ROI**.
 - See actionable buttons directly in the widget: “Increase today’s bidding limit by 3”, “Show similar parts in my yard”, “Set alert for next matching auction”, “View full market comps”.
 - Have the notification appear in the current chat if I’m actively using the app, or as a push notification if I’m not.
 
+## Post-Purchase & Listing Automation Stories
+
+**As a user, I want to...**
+
+- When I buy a car at auction, have the tool automatically help list the parts for sale on eBay (a highly desired workflow).
+- Engage in a short, guided back-and-forth with the agent: confirm which parts to list, upload photos of key parts, and set listing prices.
+- Have the agent handle the eBay listing process after I approve the details.
+
 ## Monetization & Onboarding Stories
 
 **As the Product Owner, I want to...**
