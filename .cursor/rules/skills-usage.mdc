@@ -1,0 +1,91 @@
+---
+description: How and when to use the available Skills
+---
+
+# Skills Usage Guide
+
+You have access to several powerful Skills. Use them strategically to stay token-efficient and follow architecture principles.
+
+## Available Skills
+
+### 1. getRelevantDocs
+**Purpose:** Given a task description, returns the most relevant architecture documents with short summaries.
+
+**When to use:**
+- You need to understand part of the architecture but don't want to load full documents
+- You're starting a new task and want to know which docs are relevant
+- You want to keep token usage low while still getting context
+
+**How to use:**
+```
+Use getRelevantDocs with taskDescription: "Implement a new notification type for aging inventory alerts"
+```
+
+**Best Practice:** Call this first when you're unsure which documents to load.
+
+---
+
+### 2. validateArchitecture
+**Purpose:** Checks if a proposed change follows core architecture rules using lightweight checks.
+
+**When to use:**
+- Before implementing a significant change
+- When reviewing code or a plan
+- When the user asks you to validate something against the architecture
+
+**How to use:**
+```
+Use validateArchitecture with:
+- changeDescription: "Add realtime updates for inventory using Supabase Realtime"
+- filesAffected: ["src/components/InventoryWidget.tsx"]
+```
+
+**Important:** This skill enforces key rules like:
+- Hard enforcement before LLM calls
+- Use Ably for realtime (not Supabase Realtime)
+- Use Knock for rich notifications
+- Use Inngest for background jobs
+- LangGraph only for Skills, not the main agent
+
+---
+
+### 3. pullTrace
+**Purpose:** Pulls a Langfuse trace by traceId for analysis.
+
+**When to use:**
+- The user provides a traceId and wants you to analyze it
+- You're debugging an issue and need to see what happened in a specific request
+- You need to understand a failure or unexpected behavior
+
+---
+
+### 4. checkErrors
+**Purpose:** Analyzes error logs and suggests fixes.
+
+**When to use:**
+- After running `task logs:errors` or checking Dozzle
+- When the user reports an error
+- During debugging sessions
+
+---
+
+### 5. runTask
+**Purpose:** Runs a Taskfile command and returns the output.
+
+**When to use:**
+- You need to execute development commands (e.g. `task logs:errors`, `task dev:supabase`)
+- You want to check service status
+- You're helping with local development setup
+
+---
+
+## General Rules for Using Skills
+
+1. **Prefer Skills over loading full documents** when possible — they are more token-efficient.
+2. **Start with `getRelevantDocs`** when beginning a new complex task.
+3. **Use `validateArchitecture`** before making significant changes.
+4. **Use `pullTrace`** when the user gives you a traceId.
+5. **Use `checkErrors`** when debugging.
+6. **Use `runTask`** for development commands.
+
+Never call multiple skills at once unless necessary. Call them one at a time and use the results to decide next steps.

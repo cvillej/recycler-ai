@@ -8,21 +8,6 @@ When the user asks you to implement:
 
 1. **Follow the approved plan exactly.** Never deviate without asking.
 2. Always prefer making **small, targeted changes** and using Cursor's **"Apply"** feature instead of regenerating large portions of code.
-3. Only load full architecture files if the current task requires **deep understanding** of that component.
+3. Only load full architecture files if the current task requires **deep understanding** of that component. Use `@architecture-overview.mdc` to identify which documents are relevant.
 4. Reuse existing patterns and code style from the codebase.
 5. Balance token efficiency with code quality — never sacrifice correctness or maintainability for token savings.
-
-## When to Load Full Architecture Documents
-
-Only read the full content of these documents if your current task involves:
-
-- **Request Flow** (`@../../docs/request-flow.md`): Chat lifecycle, memory updates after LLM response, or Inngest workflow triggering.
-- **Tool Layer & Skills** (`@../../docs/tool-layer.md`): Creating or modifying tools, entity resolution logic, or LangGraph Skills.
-- **Memory Management** (`@../../docs/memory-management.md`): Changes to summarization, compaction, or structured_memory.
-- **External Event Controller** (`@../../docs/external-event-controller.md`): Background job handling or cache invalidation logic.
-- **Prompt Management** (`@../../docs/prompt-management.md`): Changes to prompt_resolution or variable injection.
-- **Observability** (`@../../docs/observability.md`): Adding new tracing, metrics, or decision logging.
-- **Failure Mode & HITL** (`@../../docs/failure-mode-and-hitl.md`): Error handling, clarification gates, or Knock HITL flows.
-- **External System Integration** (`@../../docs/external-system-integration.md`): New external system connections or routing logic.
-
-If your task does not involve these areas, proceed without loading the full documents.

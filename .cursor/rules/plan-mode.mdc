@@ -6,24 +6,11 @@ description: Rules for Plan Mode in Cursor
 
 When the user asks you to create a plan:
 
-1. **Identify relevant architecture documents** from the list below.
-2. **Reference** them using the provided links. Only load full content if the feature touches complex areas (memory, HITL, entity resolution, request flow).
+1. **Identify relevant architecture documents** using `@architecture-overview.mdc`.
+2. **Reference** them using the links provided there. Only load full content if the feature touches complex areas (memory, HITL, entity resolution, request flow).
 3. Create a **structured plan** that includes:
    - Clear numbered steps
    - Files that will be created or modified
    - Key decisions that need to be made
 4. If you encounter **any risks, ambiguities, or decisions** that could significantly impact the architecture, **stop and ask the user** before proceeding.
 5. Keep plans **moderately detailed** — provide enough structure for implementation without removing all decision-making.
-
-## Key Architecture Documents
-
-- **Request Flow** (`@../../docs/request-flow.md`): Core request lifecycle, Context Enricher, Post-Response Handler, Inngest integration, and notification routing. Read this for anything involving chat flow, memory updates, or async work.
-- **Tool Layer & Skills** (`@../../docs/tool-layer.md`): Tool definitions, entity resolution, Skills (LangGraph), and context-aware guidance. Read this when implementing or modifying tools.
-- **Memory Management** (`@../../docs/memory-management.md`): memory_summary, structured_memory, summarization, compaction, and checkpoints. Read this for any memory-related changes.
-- **External Event Controller** (`@../../docs/external-event-controller.md`): Event Worker, Context Enricher, and cache invalidation. Read this for background jobs or external event handling.
-- **Prompt Management** (`@../../docs/prompt-management.md`): prompt_resolution, variable injection, and Skills integration. Read this when changing how prompts are built.
-- **Observability** (`@../../docs/observability.md`): Langfuse tracing, decision traceability, and metrics. Read this when adding new tracing or metrics.
-- **Failure Mode & HITL** (`@../../docs/failure-mode-and-hitl.md`): Error handling, clarification gates, and Knock + Inngest HITL flows. Read this for any user confirmation or error paths.
-- **External System Integration** (`@../../docs/external-system-integration.md`): Inngest, Knock, and Ably integration patterns. Read this for external system connections.
-- **Development Environment** (`@../../docs/development-env.md`): Local setup, Taskfile commands, and Dozzle. Read this for dev workflow questions.
-- **User Stories** (`@../../docs/user-stories.md`): Product requirements and Phase 0 scope. Read this to understand business goals.

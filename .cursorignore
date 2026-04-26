@@ -1,14 +1,104 @@
+# =============================================================================
+# .cursorignore - Optimized for Cursor AI + LLM Coding Agents
+# Project: AI Yard Assistant (recycler-ai)
+# =============================================================================
+# Goal: Minimize token usage while keeping critical architecture and config visible.
+
+# =============================================================================
+# Dependencies & Package Managers
+# =============================================================================
 node_modules/**
+.pnpm-store/**
+.pnp.*
+.yarn/**
+
+# =============================================================================
+# Build Outputs & Generated Files
+# =============================================================================
+dist/**
+build/**
+.next/**
+out/**
+.turbo/**
+*.tsbuildinfo
+
+# =============================================================================
+# Version Control, IDE & OS
+# =============================================================================
 .git/**
 .idea/**
-.venv/**
-data/**
-**/notes
-**/backup
-.pnpm-store/**
-**/todo
-**/todo-app
+.vscode/**
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
 
-**/traces
-**/prompts
-*/.DS_Store
+# =============================================================================
+# Python
+# =============================================================================
+.venv/**
+venv/**
+__pycache__/**
+*.pyc
+*.pyo
+
+# =============================================================================
+# Environment & Secrets (Important for security + token reduction)
+# =============================================================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+supabase/.env.*
+
+# =============================================================================
+# Supabase (Official Recommended Ignores + Custom)
+# =============================================================================
+.supabase/**                    # Local Supabase folder created by CLI
+supabase/.branches/**           # Supabase branch data
+supabase/seed/**                # Large seed files (if any)
+supabase/config.toml            # Sometimes large or auto-generated
+
+# =============================================================================
+# Project-Specific Large / Generated Folders
+# =============================================================================
+data/**
+**/traces/**
+**/prompts/**
+**/backup/**
+**/notes/**
+**/todo/**
+**/todo-app/**
+**/logs/**
+**/coverage/**
+
+# =============================================================================
+# Docker & Infrastructure (Reference only - not core code)
+# =============================================================================
+grok-docker/**
+infra/supabase/seed/**          # Large seed data
+docker-compose.override.yml
+
+# =============================================================================
+# Test & Temporary Files
+# =============================================================================
+__tests__/**
+test-results/**
+playwright-report/**
+*.tmp
+*.temp
+
+# =============================================================================
+# Notes for Cursor AI
+# =============================================================================
+# We intentionally KEEP visible:
+# - docs/ (architecture documents)
+# - Taskfile.yml
+# - docker-compose.yml (root level)
+# - infra/supabase/schema.sql and migrations/
+# - .cursor/rules/
+#
+# These are important for the LLM to understand the project.%

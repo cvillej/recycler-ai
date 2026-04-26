@@ -1,0 +1,61 @@
+---
+description: Core architecture overview and document index for the AI Yard Assistant
+---
+
+# Architecture Overview
+
+## Core Mental Model
+
+The AI Yard Assistant is a **hybrid conversational + event-driven system** with a strict separation between:
+
+### Control Plane (Enforcement & Orchestration)
+- `Context Enricher` + `effective_features` resolution
+- `NotificationService` (Knock for rich/HITL, Ably for realtime)
+- Inngest (durable workflows, "wait for event", HITL orchestration)
+- Quota / Feature / Canonical ID enforcement
+- This plane must be fast, reliable, and observable
+
+### Reasoning Plane (Intelligence)
+- `TS Resolver` + `prompt_resolution`
+- Tool Layer + LangGraph Skills (Skills only)
+- LLM calls via aiproxy/LiteLLM
+- Memory Management (summarization, compaction, checkpoints)
+
+**Key Principle**: Hard enforcement (features, quotas, safety, canonical IDs) happens **before** any LLM call.
+
+## Universal Concepts
+
+- **`contextId`** — Single source of truth identifier used across conversations, memory, traces, notifications, and background jobs.
+- **`ThreadContext`** — Lightweight, aggressively cached runtime snapshot.
+- **Hybrid Notifications** — Knock for rich/actionable/HITL, Ably for simple realtime updates.
+- **Full Observability** — Every decision uses the Decision Traceability Standard (`decision` / `reason` / `input` / `output`).
+
+## Document Index
+
+Use these when you need deep context. Load full documents **only** when the current task requires it.
+
+**Core System:**
+- Request Flow: `@../../docs/request-flow.md`
+- Tool Layer & Skills: `@../../docs/tool-layer.md`
+- Memory Management: `@../../docs/memory-management.md`
+- Prompt Management: `@../../docs/prompt-management.md`
+
+**Infrastructure & Background:**
+- External Event Controller: `@../../docs/external-event-controller.md`
+- External System Integration: `@../../docs/external-system-integration.md`
+- Development Environment: `@../../docs/development-env.md`
+- Dev Steps: `@../../docs/dev-steps.md`
+
+**Observability & Quality:**
+- Observability: `@../../docs/observability.md`
+- Failure Mode & HITL: `@../../docs/failure-mode-and-hitl.md`
+
+**Product:**
+- User Stories: `@../../docs/user-stories.md`
+
+## Usage Guidance
+
+- For most tasks, rely on this overview + your rules.
+- Only load full documents when you need deep technical details for the current task.
+- When referencing documents, prefer specific sections over loading entire files when possible.
+- Always follow token-efficiency principles.

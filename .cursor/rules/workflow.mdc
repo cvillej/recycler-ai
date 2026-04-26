@@ -20,9 +20,17 @@ When the user asks you to implement, follow the rules in:
 
 These rules apply in both modes:
 - Token Efficiency: `@token-efficiency.mdc`
-- Architecture Document Index: `@architecture-links.mdc`
+- Architecture Overview: `@architecture-overview.mdc`
 
-## Quick Reference
+## Runtime Environment for Skills
 
-For quick access to architecture documents with descriptions, see:
-**`@architecture-links.mdc`**
+**All Skills run in the project root context:**
+
+- Working directory = project root (where root `package.json` lives)
+- Import from `@/packages/shared` and other workspace packages
+- Use dependencies from the root `package.json` and `node_modules`
+- **Do not** create separate `package.json` files inside `.cursor/skills/`
+- Node version: 20+
+- TypeScript with strict mode
+
+When creating new Skills, write normal TypeScript that imports from the main project. Do not guess paths or create isolated dependencies.

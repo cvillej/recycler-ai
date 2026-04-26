@@ -14,8 +14,8 @@ This document defines the recommended development strategy and step-by-step plan
 - Use Docker for supporting services, but run the backend outside Docker for easy debugging
 
 **Key Tools:**
-- **Taskfile.yml** — Single source of truth for all commands
-- **docker-compose.yml** — All supporting services (Inngest, Ably, Langfuse, Dozzle, Redis, MinIO, ClickHouse)
+- **Taskfile.yml** — Single source of truth for all commands (root level)
+- **docker-compose.yml** — Full stack in project root (Inngest, Ably, Langfuse v3 full stack with ClickHouse/Redis/MinIO, Dozzle)
 - **Supabase CLI** — Best-in-class local Postgres + pgvector experience
 - **Dozzle** — Unified Docker log viewer (http://localhost:8081)
 - **Cursor + LLM Agent** — Primary development interface
@@ -28,11 +28,11 @@ This document defines the recommended development strategy and step-by-step plan
 |------------------------|---------------------|--------|
 | **Backend (Node.js)**  | Outside Docker      | Easy Cursor debugging + LLM can read source + logs directly |
 | **Supabase**           | `supabase start`    | Best local developer experience |
-| **Inngest**            | Docker              | Has excellent local UI |
-| **Ably Local**         | Docker              | Simple |
-| **Langfuse v3**        | Docker (with ClickHouse + MinIO) | Full observability |
-| **Dozzle**             | Docker              | Unified log viewer for all services |
-| **Redis / ClickHouse** | Docker              | Supporting services only |
+| **Inngest**            | Docker (root compose) | Excellent local UI |
+| **Ably Local**         | Docker (root compose) | Simple and reliable |
+| **Langfuse v3**        | Docker (root compose) | Full stack with ClickHouse + Redis + MinIO |
+| **Dozzle**             | Docker (root compose) | Best unified log viewer |
+| **Redis / ClickHouse / MinIO** | Docker (root compose) | Required by Langfuse v3 |
 
 ---
 
@@ -44,8 +44,8 @@ This document defines the recommended development strategy and step-by-step plan
 
 **Tasks:**
 1. Set up monorepo (pnpm + Turborepo + Taskfile)
-2. Create `grok-docker/docker-compose.yml` (Inngest, Ably, Langfuse, Dozzle, Redis, MinIO, ClickHouse)
-3. Set up Supabase local via CLI + migrate existing market data
+2. Start full Docker stack: `docker compose up -d`
+3. Set up Supabase local via CLI + apply schema + migrate existing market data
 4. Create basic `Request Flow` skeleton
 5. Integrate Langfuse from day 1
 6. Create `task dev:all` and `task logs:errors` commands
@@ -55,7 +55,7 @@ This document defines the recommended development strategy and step-by-step plan
 - `task dev:all` starts everything cleanly
 - Can make a basic API call that hits the resolver and returns a response
 - Langfuse traces are working
-- Dozzle is accessible and showing logs from all services
+- Dozzle is accessible at http://localhost:8081
 - LLM agent can run `task logs:errors` and analyze output
 
 ---
@@ -76,7 +76,7 @@ This document defines the recommended development strategy and step-by-step plan
 - Can run a full conversation turn via API
 - Tools execute correctly with entity resolution
 - Memory summarization works
-- LLM agent can debug issues using `task logs:errors` + Langfuse traces + Dozzle
+- LLM agent can debug issues using `task logs:errors` + Langfuse + Dozzle
 
 ---
 
@@ -138,45 +138,28 @@ This document defines the recommended development strategy and step-by-step plan
 
 ## Docker + Taskfile Setup (Critical for LLM Workflow)
 
-### Recommended Taskfile Commands
+### Recommended Taskfile Commands (in root Taskfile.yml)
 
 ```yaml
-# Start everything
-dev:all:
-  desc: Start full development environment
-  cmds:
-    - task docker:up
-    - supabase start
-    - task dev:backend
+tasks:
+  dev:all:
+    desc: Start full development environment
+    cmds:
+      - docker compose up -d
+      - task dev:supabase
+      - task dev:backend
 
-# Start only backend (outside Docker - best for debugging)
-dev:backend:
-  desc: Start Node.js backend (outside Docker)
-  cmds:
-    - pnpm --filter backend dev
+  dev:backend:
+    desc: Start Node.js backend (outside Docker - best for debugging)
+    cmds:
+      - pnpm --filter backend dev
 
-# Show only errors (perfect for LLM agent)
-logs:errors:
-  desc: Show only ERROR and WARN logs across all services
-  cmds:
-    - docker compose -f grok-docker/docker-compose.yml logs --tail=100 -f | grep -E "(ERROR|WARN)"
-
-logs:backend:
-  desc: Show backend logs
-  cmds:
-    - pnpm --filter backend dev 2>&1 | grep -E "(ERROR|WARN|info)"
-
-# Docker-specific commands
-docker:up:
-  desc: Start all Docker services (Inngest, Ably, Langfuse, Dozzle, etc.)
-  cmds:
-    - docker compose -f grok-docker/docker-compose.yml up -d
-
-docker:logs:errors:
-  desc: Show only errors from Docker services (via Dozzle)
-  cmds:
-    - echo "Open Dozzle at http://localhost:8081 for best experience"
-    - docker compose -f grok-docker/docker-compose.yml logs --tail=200 -f | grep -E "(ERROR|WARN)"
+  logs:errors:
+    desc: Show only ERROR and WARN logs (best for LLM agent)
+    cmds:
+      - docker compose logs --tail=200 -f | grep -E "(ERROR|WARN)"
+      - echo "=== Backend Errors ==="
+      - pnpm --filter backend dev 2>&1 | grep -E "(ERROR|WARN)" || true
 ```
 
 ### Logging Strategy for LLM Agent
@@ -184,7 +167,7 @@ docker:logs:errors:
 **Primary Tools (in order of preference):**
 
 1. **Dozzle** (http://localhost:8081) — Best unified view of all Docker logs
-2. `task docker:logs:errors` — Quick terminal view of errors
+2. `docker compose logs --tail=200 -f | grep -E "(ERROR|WARN)"` — Quick terminal view
 3. `task logs:errors` — Combined view including backend
 4. Langfuse (http://localhost:3000) — Application-level tracing
 
@@ -202,13 +185,13 @@ docker:logs:errors:
 3. LLM agent can:
    - Read source code
    - Check Dozzle at http://localhost:8081
-   - Run `task logs:errors`
+   - Run error log commands
    - Analyze Langfuse traces
    - Propose fixes directly in code
 
 **Cursor Rules Recommendation:**
-Create `.cursor/rules/dev-logging.mdc` with instructions like:
-> "When debugging, always start by checking Dozzle at http://localhost:8081 or running `task logs:errors`. Analyze only the relevant errors. Propose minimal, targeted fixes. Prefer fixing root cause over symptoms."
+Create `.cursor/rules/dev-logging.mdc` with:
+> "When debugging, always start by checking Dozzle at http://localhost:8081. Analyze only the relevant errors. Propose minimal, targeted fixes. Prefer fixing root cause over symptoms."
 
 ---
 
@@ -218,8 +201,8 @@ Create `.cursor/rules/dev-logging.mdc` with instructions like:
 
 **Steps:**
 1. Export current schema + market data from local Postgres
-2. Create clean `db/schema.sql` with new tables (`thread_context`, `conversation_messages`, `user_plans`, etc.)
-3. Use Supabase CLI or `psql` to apply new schema
+2. Create clean `infra/supabase/schema.sql` with new tables
+3. Use Supabase CLI (`supabase db push` or `task db:apply`) to apply new schema
 4. Write one-time import script for existing market data
 5. Verify data integrity
 6. Decommission old local Postgres (or keep for reference)
@@ -232,6 +215,6 @@ Create `.cursor/rules/dev-logging.mdc` with instructions like:
 - Prioritize **observability and logging** from day 1 — this will save massive time when the LLM is helping debug
 - Keep the backend running **outside Docker** for maximum debuggability with Cursor
 - Use **Dozzle** (http://localhost:8081) as the primary log viewer for all Docker services
-- Use `task logs:errors` as the primary command for the LLM agent when terminal access is needed
+- Use `task logs:errors` as the primary command for the LLM agent
 
 This plan is designed to be incremental, testable, and optimized for an LLM-assisted development workflow with excellent visibility across all services.

@@ -1,128 +1,205 @@
 # data-layer.md
 **Version:** April 25, 2026  
-**Status:** Updated (Zoom Level 2) — Supabase Primary + Ably Realtime
+**Status:** Updated (Zoom Level 2) — Supabase Primary + pgvector
 
 This document defines the complete storage architecture for the AI Yard Assistant. It covers both the agent conversation layer and the core salvage yard business domain.
 
 ## Purpose of the Data Layer
 
-The Data Layer serves as the single source of truth for:
-- All conversation history and runtime state
-- The full salvage yard business domain (inventory, auctions, sales, market data)
+The Data Layer serves as the **single source of truth** for:
+
+- All conversation history and runtime state (`ThreadContext`, messages, memory)
+- The full salvage yard business domain (inventory, parts, vehicles, auctions, sales, market data)
 - User plans, permissions, notification preferences, and usage tracking
-- Data required for entity resolution and semantic search
+- Data required for entity resolution, semantic search, and RAG
 
-It must support fast reads for the TS Resolver and Context Enricher, efficient writes from the Event Worker, and rich querying for MCP Tools.
+It must support:
+- **Fast reads** for the TS Resolver and Context Enricher
+- **Efficient writes** from the Event Worker and Post-Response Handler
+- **Rich querying** for tools and analytics
+- **Vector similarity search** for entity resolution and semantic recall
 
-## Primary Database: Supabase Postgres
+## Primary Database: Supabase Postgres + pgvector
 
-**Primary Database**: Supabase Postgres (with `pgvector` enabled)
+**Primary Database**: Supabase Postgres (with `pgvector` extension enabled)
 
-**Rationale**:
-- Excellent developer experience and local development support via Supabase CLI + Docker
+**Rationale for Supabase**:
+- Excellent local developer experience via Supabase CLI (`supabase start`)
 - Native `pgvector` support for entity resolution and semantic search
-- Strong foundation for Row Level Security
-- Good balance of velocity and control for Phase 0
+- Built-in Row Level Security (RLS) for multi-tenant safety
+- Managed scaling, backups, and connection pooling
+- Strong balance of velocity and control for Phase 0 and beyond
 
-We continue to use **Redis** for hot caching of `ThreadContext`.
+We continue to use **Redis** aggressively for hot caching of `ThreadContext` and user plans.
 
 ## Primary Identifier
 
-All conversations are identified by a single top-level field:
+All conversations and related data are identified by a single top-level field:
 
 - **`contextId`** (UUID, primary key)
 
 This identifier is used across:
-- Conversation messages
-- ThreadContext
+- `conversation_messages`
+- `thread_context`
+- `memory_summary`, `structured_memory`, `checkpoints`
 - Langfuse traces (`session_id = contextId`)
+- Inngest workflow metadata
+- Knock and Ably events
 - Future A2A inter-agent communication
 
-**Note**: Existing references to `thread_id` will be migrated to `contextId` as subsystems are built.
+**Migration Note**: Existing references to `thread_id` will be migrated to `contextId` as subsystems are updated.
 
-## Conversation Storage
+## Core Tables
 
-Conversation history is stored in a relational table that supports structured messaging.
+### Conversation Layer
 
-**Table:** `recycleai.conversation_messages`
-
+**`recycleai.conversation_messages`**
 ```sql
 CREATE TABLE recycleai.conversation_messages (
     id BIGSERIAL PRIMARY KEY,
-    context_id UUID NOT NULL,
-    message_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    context_id UUID NOT NULL REFERENCES recycleai.thread_context(context_id),
     role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
     content TEXT NOT NULL,
-    metadata JSONB,                    -- tool calls, event type, resolved entities, etc.
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    FOREIGN KEY (context_id) REFERENCES recycleai.thread_context(context_id)
+    message_type TEXT DEFAULT 'chat',
+    metadata JSONB DEFAULT '{}',
+    importance_score NUMERIC(3,2) DEFAULT 0.5,
+    labels TEXT[] DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_conversation_messages_context_id ON recycleai.conversation_messages(context_id);
 CREATE INDEX idx_conversation_messages_created_at ON recycleai.conversation_messages(created_at);
+CREATE INDEX idx_conversation_messages_labels ON recycleai.conversation_messages USING GIN(labels);
 ```
 
-This table stores user messages, assistant responses, and structured system/event messages.
-
-## ThreadContext Table
-
-ThreadContext is the **lightweight runtime snapshot** for a given `contextId`. It contains the most important state the TS Resolver, Context Enricher, and prompt assembly need.
-
-It uses a **dual-storage** strategy:
-- **Postgres** as the durable source of truth
-- **Redis** as the hot cache for low-latency access
-
-### Postgres Schema
-
+**`recycleai.thread_context`**
 ```sql
 CREATE TABLE recycleai.thread_context (
     context_id UUID PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES recycleai.users(id),
-    session_id UUID NOT NULL REFERENCES recycleai.user_sessions(session_id),   -- NEW: mandatory
-    
-    -- First-class citizens
-    focus_state TEXT[] NOT NULL DEFAULT '{}',
-    pivot_detected BOOLEAN DEFAULT FALSE,
+    user_id UUID NOT NULL,
+    yard_id UUID NOT NULL,
+    focus_state TEXT,
     memory_summary TEXT,
-    
-    -- Pricing & control
-    user_plan JSONB,
-    
-    -- Active context pointers
-    active_bidding_session_id UUID,
-    
-    -- Housekeeping
-    last_updated TIMESTAMPTZ DEFAULT NOW(),
-    raw_context JSONB,
+    structured_memory JSONB DEFAULT '{}',
+    resolved_entities JSONB DEFAULT '{}',
+    pinned_facts JSONB DEFAULT '{}',
+    effective_features JSONB DEFAULT '{}',
+    last_activity_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_thread_context_user_id ON recycleai.thread_context(user_id);
-CREATE INDEX idx_thread_context_session_id ON recycleai.thread_context(session_id);
-CREATE INDEX idx_thread_context_focus_state ON recycleai.thread_context USING GIN(focus_state);
+CREATE INDEX idx_thread_context_yard_id ON recycleai.thread_context(yard_id);
 ```
 
-**First-class fields** (explicit columns):
-- `focus_state`
-- `pivot_detected`
-- `memory_summary`
-- `user_plan`
+### Business Domain Layer
 
-**Redis Caching**
-- Key pattern: `thread_context:{contextId}`
-- Short TTL with explicit invalidation on updates
+Key tables for the salvage yard domain (Phase 0 focus):
 
-## Realtime Strategy
+- `recycleai.vehicles`
+- `recycleai.parts`
+- `recycleai.inventory`
+- `recycleai.auctions` (deferred but schema-ready)
+- `recycleai.sales`
+- `recycleai.market_comps` (already populated with your existing data)
+- `recycleai.user_plans`
+- `recycleai.usage_ledger`
 
-**Ably** is used for live updates including:
-- `ThreadContext` changes
-- Widget reactivity
-- Simple in-app notifications
-- Job completion signals
+All business tables include `yard_id` for multi-tenant isolation and proper indexing.
 
-Rich, actionable, multi-channel, or HITL notifications are routed through **Knock**.
+## Vector Search & Entity Resolution
 
-## Business Domain Schema
+We use `pgvector` extensively for:
 
-The Data Layer includes the full `recycleai` business schema.
+- Entity resolution (fuzzy matching of parts, vehicles, and references)
+- Semantic recall of past conversations and decisions
+- RAG over market data and internal knowledge
+
+**Key Vector Tables**:
+- `salvage_resolver` (entity resolution embeddings)
+- `salvage_agent_responses` (conversation memory vectors)
+- `salvage_market_signals` (market data vectors)
+
+**Hybrid Search Strategy**:
+1. Lexical / trigram matching first (fast, exact)
+2. Vector similarity fallback (semantic)
+3. Reranking with business rules
+
+## Caching Strategy (Redis)
+
+We use **Redis** for hot-path caching:
+
+- `ThreadContext` — aggressively cached (short TTL + invalidation on write)
+- `user_plan` and `effective_features` — cached per user
+- Hot inventory and market data — cached selectively
+
+**Invalidation Rules**:
+- Any write to `thread_context` or `conversation_messages` invalidates the corresponding Redis key
+- `user_plan` changes trigger immediate invalidation
+- Event Worker is responsible for cache invalidation after external updates
+
+## Performance & Scalability
+
+**Indexing Strategy**:
+- B-tree indexes on all foreign keys and high-cardinality columns
+- GIN indexes on `labels`, `metadata`, and array columns
+- `pg_trgm` indexes for fuzzy text search
+- HNSW indexes on all vector columns (for fast approximate nearest neighbor)
+
+**Connection Pooling**:
+- Supabase provides built-in pooling
+- Application uses Prisma or Drizzle with appropriate pool sizing
+
+**Read/Write Separation** (Future):
+- Primary for writes
+- Read replicas for analytics and heavy reporting queries (planned)
+
+## Migration from Existing Postgres
+
+**Approach** (executed in Chunk 1):
+
+1. Export current schema + market data from local Homebrew Postgres
+2. Create clean `db/schema.sql` with new table definitions
+3. Apply new schema to Supabase
+4. Write one-time data migration scripts (especially for `market_comps` and inventory)
+5. Verify data integrity and vector indexes
+6. Switch application connection string to Supabase
+7. Decommission or archive old local Postgres
+
+## Security & Multi-Tenancy
+
+- **Row Level Security (RLS)** enabled on all tables containing user or yard data
+- `yard_id` is the primary tenant key
+- All queries from the application layer include proper `yard_id` filtering
+- Sensitive fields (e.g., pricing, internal notes) are protected via RLS policies
+
+## Backup & Retention
+
+- Supabase automated daily backups (retained 7–30 days depending on plan)
+- Point-in-time recovery available
+- Long-term audit logs (13 months) stored in dedicated audit tables
+
+## Future Evolution
+
+As the system grows, we can:
+
+- Add read replicas for analytics workloads
+- Introduce sharding by `yard_id` if single-tenant performance becomes a bottleneck
+- Move cold data (old conversations, completed auctions) to cheaper storage tiers
+- Add a dedicated analytics warehouse (e.g., ClickHouse or BigQuery) for heavy reporting
+- Introduce a separate vector database (e.g., Pinecone or Weaviate) if `pgvector` scaling limits are reached
+
+All of these changes can be made with minimal impact on the application layer because of our clean abstraction and `contextId`-centric design.
+
+## Summary
+
+The Data Layer is built on **Supabase Postgres + pgvector** with aggressive Redis caching. It provides:
+
+- A single source of truth for both conversational and business data
+- Native vector search for entity resolution and semantic recall
+- Excellent local development experience
+- Strong multi-tenant security via RLS
+- Clear migration path from existing data
+- Future-proof foundation for scaling
+
+This design supports fast iteration in Phase 0 while providing a solid base for long-term growth.
