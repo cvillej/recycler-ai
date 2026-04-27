@@ -38,6 +38,21 @@ tasks:
     cmds:
       - docker compose ps
 
+  dev:supabase:
+    desc: Start local Supabase via the Supabase CLI
+    cmds:
+      - supabase start
+
+  stop:supabase:
+    desc: Stop local Supabase
+    cmds:
+      - supabase stop
+
+  status:supabase:
+    desc: Show local Supabase status
+    cmds:
+      - supabase status
+
   clean:
     desc: Stop services and remove volumes (use with caution)
     cmds:

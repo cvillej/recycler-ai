@@ -1,6 +1,6 @@
 -- recycleai Schema DDL
 -- Generated from Phase 0 design in docs/db-todo.md
--- Legacy mirror; canonical reference schema lives at infra/supabase/schema.sql
+-- Canonical reference schema for Supabase-local development
 -- Not applied by `supabase start`; apply intentionally in a later migration step.
 
 -- Create schema

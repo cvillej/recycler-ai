@@ -60,7 +60,6 @@ supabase/.env.*
 .supabase/**                    # Local Supabase folder created by CLI
 supabase/.branches/**           # Supabase branch data
 supabase/seed/**                # Large seed files (if any)
-supabase/config.toml            # Sometimes large or auto-generated
 
 # =============================================================================
 # Project-Specific Large / Generated Folders
@@ -98,6 +97,7 @@ playwright-report/**
 # - docs/ (architecture documents)
 # - Taskfile.yml
 # - docker-compose.yml (root level)
+# - supabase/config.toml
 # - infra/supabase/schema.sql and migrations/
 # - .cursor/rules/
 #

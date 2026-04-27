@@ -163,7 +163,7 @@ We use **Redis** for hot-path caching:
 **Approach** (executed in Chunk 1):
 
 1. Export current schema + market data from local Homebrew Postgres
-2. Create clean `db/schema.sql` with new table definitions
+2. Create clean `infra/supabase/schema.sql` with new table definitions
 3. Apply new schema to Supabase
 4. Write one-time data migration scripts (especially for `market_comps` and inventory)
 5. Verify data integrity and vector indexes

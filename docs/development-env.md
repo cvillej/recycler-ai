@@ -94,11 +94,11 @@ docker compose up -d
 task dev:supabase
 ```
 
-### 4. Apply Database Schema
+### 4. Review Database Schema
 
 ```bash
-task db:apply
-task db:import-market-data   # Optional: import your existing market data
+# Schema reference only; do not apply during initial Supabase startup.
+less infra/supabase/schema.sql
 ```
 
 ### 5. Verify Everything
@@ -125,8 +125,8 @@ task dev:supabase          # Runs `supabase start`
 
 After first run:
 - Copy the local Supabase keys into `.env`
-- Run `task db:apply` to apply the full schema
-- (Optional) Run `task db:import-market-data` to bring in your existing data
+- Keep the schema as a reference until an intentional migration step is planned
+- Do not run migrations or import market data during initial Supabase startup
 
 **Schema location:** `infra/supabase/schema.sql`
 
