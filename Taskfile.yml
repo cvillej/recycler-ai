@@ -3,25 +3,55 @@ version: '3'
 # =====================================================
 # Docker & Supporting Services Tasks
 # =====================================================
+#
+# Usage notes:
+# - create/remove: Use Task's built-in interactive HITL prompt (requires.vars + enum).
+#   Run with `task --interactive create` or add `interactive: true` to .taskrc.yml.
+#   CONFIRM=yes to bypass prompt.
+# - up/down: Lightweight (start/stop only; assumes containers exist).
+# - restart: Uses stop/start (avoids up/down as requested; no recreation).
+# - clean: Also prompts (removes volumes too).
+# - Individual up:*: Still use up -d for targeted creation; prefer top-level create for full stack.
 
 tasks:
-  up:
-    desc: Start all Docker services (Inngest, LiteLLM, Langfuse, Redis)
+  create:
+    desc: Create and start all Docker services (pulls images if needed). Requires confirmation (HITL prompt).
+    requires:
+      vars:
+        - name: CONFIRM
+          enum: [yes, no]
     cmds:
       - docker compose up -d
+    silent: false
+
+  remove:
+    desc: Stop and remove all Docker containers/networks (volumes preserved). Requires confirmation (HITL prompt).
+    requires:
+      vars:
+        - name: CONFIRM
+          enum: [yes, no]
+    cmds:
+      - docker compose down
+    silent: false
+
+  up:
+    desc: Start existing Docker services (use create for initial setup or if containers missing)
+    cmds:
+      - docker compose start
     silent: false
 
   down:
-    desc: Stop all Docker services
+    desc: Stop Docker services without removing containers (use remove to fully remove)
     cmds:
-      - docker compose down
+      - docker compose stop
     silent: false
 
   restart:
-    desc: Restart all Docker services
+    desc: Restart all Docker services (stop then start; does NOT use up/down)
     cmds:
-      - docker compose down
-      - docker compose up -d
+      - docker compose stop
+      - docker compose start
+    silent: false
 
   logs:
     desc: Show logs from all Docker services
@@ -54,24 +84,28 @@ tasks:
       - supabase status
 
   clean:
-    desc: Stop services and remove volumes (use with caution)
+    desc: Stop services and remove containers + volumes (destructive; use with caution). Requires confirmation.
+    requires:
+      vars:
+        - name: CONFIRM
+          enum: [yes, no]
     cmds:
       - docker compose down -v
     silent: false
 
   # Individual service commands
   up:inngest:
-    desc: Start only Inngest
+    desc: Create/start only Inngest (prefer top-level create/remove for full stack management)
     cmds:
       - docker compose up -d inngest
 
   up:litellm:
-    desc: Start only LiteLLM
+    desc: Create/start only LiteLLM (prefer top-level create/remove for full stack management)
     cmds:
       - docker compose up -d litellm
 
   up:langfuse:
-    desc: Start only Langfuse
+    desc: Create/start only Langfuse (prefer top-level create/remove for full stack management)
     cmds:
       - docker compose up -d langfuse-web langfuse-worker
 
@@ -95,7 +129,7 @@ tasks:
   # =============================================================================
 
   dev:
-    desc: Start core development services (Inngest + LiteLLM + Langfuse)
+    desc: Start core development services (Inngest + LiteLLM + Langfuse). Use create for full stack + prompt.
     cmds:
       - docker compose up -d inngest litellm langfuse-web langfuse-worker
 

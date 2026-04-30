@@ -17,7 +17,7 @@ x-langfuse-env: &langfuse-env
   NODE_ENV: production
   TELEMETRY_ENABLED: "false"
   LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
-  DATABASE_URL: postgresql://${DB_LOCAL_USER}:${DB_LOCAL_PASSWORD}@host.docker.internal:${DB_LOCAL_PORT}/${DB_LOCAL_DB_NAME}?schema=${DB_LOCAL_SCHEMA_LANGFUSE}
+  DATABASE_URL: postgresql://${DB_DOCKER_USER:-postgres}:${DB_DOCKER_PASSWORD:-postgres}@postgres:5432/${DB_DOCKER_DB_NAME:-ai}?schema=${DB_DOCKER_SCHEMA_LANGFUSE:-langfuse}
   NEXTAUTH_URL: http://localhost:3000
   SALT: ${LANGFUSE_SALT:-changeme-salt}
   ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:-9f4774bb44f9fcab66c3674c0af47006db55a63d2dae4afa06eabcc004c57ac5}
@@ -130,34 +130,31 @@ services:
   # LANGFUSE v3 — Observability (Full Stack)
   # ============================================
 
-  # Create the dedicated Langfuse schema in local Homebrew Postgres before Langfuse starts.
-  langfuse-db-init:
+  postgres:
     image: docker.io/postgres:16-alpine
-    restart: "no"
-    env_file:
-      - .env
+    restart: always
+    container_name: langfuse-postgres
+    networks:
+      - langfuse-net
     environment:
-      # Containers must use Docker's host gateway even when the host .env uses localhost.
-      DB_LOCAL_HOST: host.docker.internal
-      PGPASSWORD: ${DB_LOCAL_PASSWORD}
-    command:
-      - sh
-      - -c
-      - |
-        until pg_isready -h "$$DB_LOCAL_HOST" -p "$$DB_LOCAL_PORT" -U "$$DB_LOCAL_USER" -d "$$DB_LOCAL_DB_NAME"; do
-          echo "Waiting for local Postgres..."
-          sleep 2
-        done
+      POSTGRES_PASSWORD: ${DB_DOCKER_PASSWORD:-postgres}
+      POSTGRES_USER: ${DB_DOCKER_USER:-postgres}
+      POSTGRES_DB: ${DB_DOCKER_DB_NAME:-ai}
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_DOCKER_USER:-postgres} -d ${DB_DOCKER_DB_NAME:-ai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-        psql "postgresql://$$DB_LOCAL_USER@$$DB_LOCAL_HOST:$$DB_LOCAL_PORT/$$DB_LOCAL_DB_NAME" \
-          -v schema="$$DB_LOCAL_SCHEMA_LANGFUSE" <<'SQL'
-        SELECT format('CREATE SCHEMA IF NOT EXISTS %I', :'schema') \gexec
-        SQL
-
-  # Langfuse Worker
   langfuse-worker:
     image: docker.io/langfuse/langfuse-worker:3
     restart: always
+    networks:
+      - langfuse-net
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -165,17 +162,28 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      langfuse-db-init:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      langfuse-web:
+        condition: service_healthy
     environment:
       <<: *langfuse-env
+      HOST: 0.0.0.0
 
-  # Langfuse Web UI + API
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://$$(hostname -i):3030/api/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 20s
+
   langfuse-web:
     image: docker.io/langfuse/langfuse:3
     restart: always
     ports:
       - "127.0.0.1:3000:3000"
+    networks:
+      - langfuse-net
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -183,11 +191,12 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      langfuse-db-init:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     environment:
       <<: *langfuse-env
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-changeme-super-secret-32-chars-minimum}
+      HOST: 0.0.0.0
 
       # Headless initialization (optional but useful)
       LANGFUSE_INIT_ORG_ID: salvagebid-ai
@@ -200,11 +209,19 @@ services:
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-ChangeMe123!}
       LANGFUSE_INIT_USER_NAME: Admin
 
-  # ClickHouse — Trace storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://$$(hostname -i):3000/api/public/health?failIfDatabaseUnavailable=true || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 20s
+
   clickhouse:
     image: docker.io/clickhouse/clickhouse-server
     restart: always
     user: "101:101"
+    networks:
+      - langfuse-net
     environment:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: clickhouse
@@ -222,10 +239,11 @@ services:
       retries: 10
       start_period: 5s
 
-  # Redis — Queue between web and worker
   redis:
     image: docker.io/redis:7
     restart: always
+    networks:
+      - langfuse-net
     command: >
       --requirepass ${REDIS_PASSWORD:-langfuse-redis-secret}
       --maxmemory-policy noeviction
@@ -240,10 +258,11 @@ services:
       retries: 10
       start_period: 1s
 
-  # MinIO — Local S3-compatible storage (no AWS needed)
   minio:
     image: docker.io/minio/minio
     restart: always
+    networks:
+      - langfuse-net
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
     environment:
@@ -269,3 +288,7 @@ volumes:
   langfuse_clickhouse_data:
   langfuse_clickhouse_logs:
   langfuse_redis_data:
+  langfuse_postgres_data:
+
+networks:
+  langfuse-net:

@@ -44,7 +44,7 @@ This document defines the recommended development strategy and step-by-step plan
 
 **Tasks:**
 1. Set up monorepo (pnpm + Turborepo + Taskfile)
-2. Start full Docker stack: `docker compose up -d`
+2. Start full Docker stack: `task create` (uses built-in HITL confirmation prompt)
 3. Set up Supabase local via CLI (agent tables only) + implement thin Business Data API layer for legacy Postgres access
 4. Create basic `Request Flow` skeleton
 5. Integrate Langfuse from day 1
@@ -148,7 +148,7 @@ tasks:
   dev:all:
     desc: Start full development environment
     cmds:
-      - docker compose up -d
+      - task create  # Uses HITL confirmation prompt (updated)
       - task dev:supabase
       - task dev:backend
 

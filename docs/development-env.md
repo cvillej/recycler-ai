@@ -87,8 +87,9 @@ cp .env.example .env
 ### 3. Start All Supporting Services
 
 ```bash
-# Start the full Docker stack (Inngest, LiteLLM, Langfuse v3 full stack, Dozzle)
-docker compose up -d
+# Start the full Docker stack (Inngest, LiteLLM, Langfuse v3 full stack, Dozzle, etc.)
+# NOTE: Uses `task create` which prompts for confirmation (HITL via Task interactive vars)
+task create
 
 # Start Supabase local (separate from Docker)
 task dev:supabase
@@ -151,15 +152,20 @@ Your `docker-compose.yml` (in the project root) includes the **full Langfuse v3 
 
 ### Key Taskfile Commands
 
-| Command                        | Description |
-|--------------------------------|-----------|
-| `task dev:all`                 | Start full stack (Docker + Supabase + Backend) |
-| `task dev:backend`             | Start backend only (outside Docker) |
-| `task dev:supabase`            | Start/restart Supabase |
-| `docker compose up -d`         | Start/restart all Docker services |
-| `task logs:errors`             | Show only ERROR/WARN (best for LLM) |
-| `task docker:logs:errors`      | Show Docker errors via Dozzle |
-| `task trace:pull <traceId>`    | Pull Langfuse trace |
+- `task create` - Create/start full Docker stack **(with interactive HITL confirmation prompt via CONFIRM enum)**
+- `task up` - Lightweight start of existing services
+- `task down` - Stop services (no container removal)
+- `task remove` - Stop + remove containers/networks (with confirmation prompt)
+- `task restart` - Restart using stop then start (no up/down)
+- `task dev:supabase` - Start/restart Supabase
+- `task logs:errors` - Show only ERROR/WARN logs (best for LLM)
+- `task status` or `task ps` - Check running services
+- `task clean` - Full cleanup including volumes (with prompt)
+
+**Notes:** 
+- `create`/`remove`/`clean` use Task built-in HITL prompt (see requires.vars in Taskfile.yml and .taskrc.yml).
+- dev:all and dev:backend are referenced in dev-steps.md but not yet in Taskfile (can be added as convenience wrapping create + supabase + backend).
+- Updated to reflect new task semantics; `docker compose up -d` replaced by `task create`.
 
 ### Logging Strategy for LLM Agent
 
@@ -169,9 +175,7 @@ task logs:errors
 ```
 
 **Even better for complex issues:**
-```bash
-task docker:logs:errors
-```
+Use Dozzle web UI at http://localhost:8081 (unified Docker logs) or `task logs:errors`.
 Then open **Dozzle** at http://localhost:8081 for a beautiful web UI.
 
 ## Dev-Mode Annotations

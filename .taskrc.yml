@@ -1,0 +1,4 @@
+interactive: true
+# Enables Task's built-in interactive prompts for required variables (e.g. CONFIRM enum in create/remove/clean tasks).
+# This makes the HITL confirmation seamless without needing --interactive flag every time.
+# See Task docs: https://taskfile.dev/docs/guide#prompting-for-missing-variables-interactively
